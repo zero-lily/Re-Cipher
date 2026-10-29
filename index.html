@@ -22,7 +22,7 @@
 <div class="tabbar" role="tablist" aria-label="変換モード"><button id="tab-encode" class="tab" type="button" role="tab" aria-selected="true" aria-controls="tool-panel">✦ 暗号化</button><button id="tab-decode" class="tab" type="button" role="tab" aria-selected="false" aria-controls="tool-panel">↩ 復号化</button></div>
 <div class="workspace" id="tool-panel" role="tabpanel">
  <div class="block-head"><label class="block-title" id="input-label" for="editor">暗号化したい文章</label><span class="subtle" id="input-count">0文字</span></div>
- <div class="prefix-toolbar hidden" id="prefix-toolbar"><span>接頭辞を先頭に入れる</span><button type="button" id="insert-prefix" class="btn-prefix" aria-label="入力欄の先頭にRe信号:を挿入">＋ Re信号: を入力</button><small>旧 Re: にも対応</small></div>
+ <div class="prefix-toolbar hidden" id="prefix-toolbar"><span>接頭辞を先頭に入れる</span><button type="button" id="insert-prefix" class="btn-prefix" aria-label="入力欄の先頭にRe信号:を挿入">＋ Re信号: を入力</button></div>
  <textarea id="editor" class="editor" placeholder="文章を入力または貼り付けしてください" spellcheck="false" aria-labelledby="input-label"></textarea>
  <div class="under-editor"><span class="hint" id="input-hint">漢字・ひらがな・カタカナ・記号も使えます</span><div class="buttons-inline"><button type="button" class="btn-minor" id="paste">貼り付け</button><button type="button" class="btn-minor" id="clear">クリア</button></div></div>
  <div class="samples" id="sample-row"><span class="sample-label">例文：</span><button class="sample" type="button" data-example="このシーン後で味わい深い">このシーン後で味わい深い</button><button class="sample" type="button" data-example="レムって誰？">レムって誰？</button><button class="sample" type="button" data-example="スバルがんばれ！">スバルがんばれ！</button></div>
@@ -34,7 +34,7 @@
 </div>
 </section>
 <details class="details" id="preview-details"><summary>YouTubeのチャット表示イメージ</summary><div class="details-body"><div class="comment-preview"><span class="avatar">R</span><div><div class="author">視聴者</div><div class="comment-content" id="preview">Re信号:……</div></div></div><p class="footnote">コピーした暗号文をチャット・コメントに貼り付ける想定です。</p></div></details>
-<div class="help"><section class="help-card"><h2>使い方</h2><ol><li>暗号化タブで文章を入力し、結果をコピーする</li><li>コメント欄・ライブチャットに <strong>Re信号:</strong> 付きの文章を投稿する</li><li>読む人は復号化タブに貼り付けるだけで元の文章が表示される（旧 Re: も復号可能）</li></ol></section><section class="help-card"><h2>リゼロの世界観にちなんだ64文字</h2><p>カタカナや大罪などに関連する漢字から構成した可逆変換です。漢字も元の表記のまま復号できます。</p><div class="glyphs" id="glyphs"></div></section></div>
+<div class="help"><section class="help-card"><h2>使い方</h2><ol><li>暗号化タブで文章を入力し、結果をコピーする</li><li>コメント欄・ライブチャットに <strong>Re信号:</strong> 付きの文章を投稿する</li><li>読む人は復号化タブに貼り付けるだけで元の文章が表示される</li></ol></section><section class="help-card"><h2>このツールについて</h2><p>リゼロの世界観にちなんだ文字列へ変換します。漢字やかなの表記をそのまま復号でき、入力した文章は端末内で処理します。</p></section></div>
 <footer class="footer">Re:Cipher v1.1 · 非公式ファンツール。復号可能な文字置換であり、秘密を保護する暗号技術ではありません。入力内容は端末内で処理し、送信・保存しません。権利者とは関係ありません。</footer>
 </main>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -42,7 +42,7 @@
 <script>
 (() => {
   'use strict';
-  const NEW_PREFIX='Re信号:', LEGACY_PREFIX='Re:';
+  const NEW_PREFIX='Re信号:';
   const dict = JSON.parse(document.getElementById('dictionary').textContent);
   const symbols = Array.from(dict.alphabet), singles = dict.singles, pairs = dict.pairs, escape = dict.escape;
   const symbolValues = new Map(symbols.map((ch, i) => [ch, i]));
@@ -90,8 +90,8 @@
     return out;
   }
   function decode(raw) {
-    const m = /Re信号:|Re:/.exec(raw);
-    if (!m) throw new Error('「Re信号:」または旧「Re:」で始まる暗号を入力してください。');
+    const m = /Re信号:/.exec(raw);
+    if (!m) throw new Error('「Re信号:」で始まる暗号を入力してください。');
     const data = Array.from(raw.slice(m.index + m[0].length).trim());
     if (!data.length) throw new Error(m[0]+' の後に暗号を入力してください。');
     let out = '';
@@ -136,7 +136,7 @@
     $('editor').value=state.drafts[mode];
     $('input-label').textContent=mode==='encode'?'暗号化したい文章':'復号したい暗号文';
     $('editor').placeholder=mode==='encode'?'文章を入力または貼り付けしてください':'Re信号: から始まる暗号文を貼り付けしてください';
-    $('input-hint').textContent=mode==='encode'?'漢字・ひらがな・カタカナ・記号も使えます':'Re信号: または旧 Re: の後を即復号します';
+    $('input-hint').textContent=mode==='encode'?'漢字・ひらがな・カタカナ・記号も使えます':'Re信号: の後を即復号します';
     $('result-title').textContent=mode==='encode'?'暗号化結果':'復号結果';
     $('mode-badge').textContent=mode==='encode'?'Re信号: が自動で付きます':'元の文章をそのまま表示';
     $('metric-label').textContent=mode==='encode'?'元の文章との比率':'復号後の文字数';
@@ -178,7 +178,7 @@
   $('tab-encode').addEventListener('click',()=>setMode('encode'));
   $('tab-decode').addEventListener('click',()=>setMode('decode'));
   $('editor').addEventListener('input',render);
-  const hasPrefix=t=>t.trimStart().startsWith(NEW_PREFIX)||t.trimStart().startsWith(LEGACY_PREFIX);
+  const hasPrefix=t=>t.trimStart().startsWith(NEW_PREFIX);
   $('editor').addEventListener('paste',e=>{const v=e.clipboardData?.getData('text')||'';if(state.mode==='encode'&&hasPrefix(v)){e.preventDefault();state.drafts.decode=v.trim();setMode('decode');toast('暗号を検出しました');}});
   $('insert-prefix').addEventListener('click',()=>{
     if (state.mode!=='decode') setMode('decode');
@@ -191,7 +191,6 @@
   document.querySelectorAll('[data-example]').forEach(b=>b.addEventListener('click',()=>{$('editor').value=b.dataset.example;render();}));
   $('copy').addEventListener('click',()=>copyText(state.lastValue));
   $('check-in-decode').addEventListener('click',()=>{if(state.lastValue){state.drafts.decode=state.lastValue;setMode('decode');$('editor').focus();}});
-  const list=$('glyphs');symbols.forEach(ch=>{const s=document.createElement('span');s.className='glyph';s.textContent=ch;list.append(s);});
   setMode('encode');
 })();
 </script>
