@@ -2,12 +2,13 @@
 (()=>{
  const PREFIX='Re信号:';
  const $=id=>document.getElementById(id);
- const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue')};
- let dict=null,trie=null,encrypted='',currentPlain='',pending=null;
+ const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded')};
+ let dict=null,trie=null,encrypted='',currentPlain='',pending=null,decodedText='';
  const symbolLen=s=>Array.from(s).length;
  const note=(s,error=false)=>{ui.notice.textContent=s;ui.notice.className='notice '+(error?'error':'success');};
- chrome.storage.sync.get({enabled:false}).then(v=>ui.enabled.checked=!!v.enabled);
+ chrome.storage.sync.get({enabled:true,hideSignals:false}).then(v=>{ui.enabled.checked=!!v.enabled;ui.hide.checked=!!v.hideSignals;});
  ui.enabled.addEventListener('change',()=>chrome.storage.sync.set({enabled:ui.enabled.checked}));
+ ui.hide.addEventListener('change',()=>chrome.storage.sync.set({hideSignals:ui.hide.checked}));
  function makeTrie(codec){
    const root=Object.create(null),rev=new Map();
    for(const [code,token] of Object.entries(codec.pairs))rev.set(token,code);
@@ -32,6 +33,62 @@
    let result=PREFIX;for(let i=0;i<n;){const [j,code]=ways[i];result+=code;i=j;}
    return result;
  }
+ function decode(text){
+   if(!dict)throw Error('辞書を読み込み中です');
+   const input=text.trim();
+   if(!input.startsWith(PREFIX))throw Error('「Re信号:」から始まる暗号を入力してください');
+   const data=Array.from(input.slice(PREFIX.length).trim());
+   if(!data.length)throw Error('Re信号: の後に暗号を入力してください');
+   const alphabet=Array.from(dict.alphabet),digits=Array.from(dict.katakana);
+   const values=new Map(alphabet.map((ch,i)=>[ch,i]));
+   const digitValues=new Map(digits.map((ch,i)=>[ch,i]));
+   let result='';
+   for(let i=0;i<data.length;){
+     let head=data[i];if(head==='!')head='！';if(head==='?')head='？';
+     if(head===dict.escape){
+       if(i+5>data.length)throw Error('暗号が途中で切れています');
+       let cp=0;
+       for(let j=i+1;j<i+5;j++){
+         const digit=digitValues.get(data[j]);
+         if(digit===undefined)throw Error('暗号に使用できない文字があります');
+         cp=cp*digits.length+digit;
+       }
+       if(cp>0x10ffff||(cp>=0xd800&&cp<=0xdfff))throw Error('無効な文字コードです');
+       result+=String.fromCodePoint(cp);i+=5;
+     }else if(Object.prototype.hasOwnProperty.call(dict.singles,head)){
+       result+=dict.singles[head];i++;
+     }else{
+       if(i+1>=data.length)throw Error('暗号が途中で切れています');
+       let next=data[i+1];if(next==='!')next='！';if(next==='?')next='？';
+       if(!values.has(head)||!values.has(next))throw Error('暗号に使用できない文字があります');
+       const word=dict.pairs[head+next];
+       if(word===undefined)throw Error('この符号は未登録です。辞書を更新してください');
+       result+=word;i+=2;
+     }
+   }
+   return result;
+ }
+ function renderDecode(){
+   const raw=ui.decodeInput.value.trim();
+   decodedText='';ui.copyDecoded.disabled=true;ui.decodedCount.textContent='0文字';
+   ui.decodeHint.classList.remove('error');
+   if(!raw||raw===PREFIX){
+     ui.decodedResult.textContent='ここに元の文章が表示されます';
+     ui.decodeHint.textContent='Re信号: の後の暗号を入力してください。';
+     return;
+   }
+   try{
+     decodedText=decode(raw);
+     ui.decodedResult.textContent=decodedText;
+     ui.decodedCount.textContent=symbolLen(decodedText)+'文字';
+     ui.copyDecoded.disabled=false;
+     ui.decodeHint.textContent='復号しました。';
+   }catch(e){
+     ui.decodedResult.textContent='復号できませんでした';
+     ui.decodeHint.textContent=e.message;
+     ui.decodeHint.classList.add('error');
+   }
+ }
  function render(){
    const plain=ui.plain.value;ui.count.textContent=symbolLen(plain)+'文字';
    if(plain!==currentPlain){pending=null;ui.confirm.classList.add('hidden');}
@@ -43,7 +100,7 @@
  async function loadDictionary(){
    const r=await chrome.runtime.sendMessage({type:'GET_CODEC'});
    if(!r?.ok||!r.codec)throw Error(r?.error||'辞書を取得できません');
-   dict=r.codec;trie=makeTrie(dict);render();showStatus();
+   dict=r.codec;trie=makeTrie(dict);render();renderDecode();showStatus();
  }
  async function showStatus(){
    const x=await chrome.storage.local.get(['codec','lastSync','lastError','decodeIssue']);
@@ -54,8 +111,23 @@
  }
  ui.update.addEventListener('click',async()=>{
    ui.update.disabled=true;note('GitHubの辞書を確認中…');
-   try{const r=await chrome.runtime.sendMessage({type:'FORCE_SYNC'});if(!r?.ok)throw Error(r?.error||'更新失敗');dict=r.codec;trie=makeTrie(dict);render();note('辞書を更新・確認しました');}
+   try{const r=await chrome.runtime.sendMessage({type:'FORCE_SYNC'});if(!r?.ok)throw Error(r?.error||'更新失敗');dict=r.codec;trie=makeTrie(dict);render();renderDecode();note('辞書を更新・確認しました');}
    catch(e){note(e.message,true);}finally{ui.update.disabled=false;showStatus();}
+ });
+ ui.decodeInput.addEventListener('input',renderDecode);
+ $('clear-decode').addEventListener('click',()=>{ui.decodeInput.value='';renderDecode();ui.decodeInput.focus();});
+ $('insert-prefix').addEventListener('click',()=>{
+   if(!ui.decodeInput.value.trimStart().startsWith(PREFIX)){
+     ui.decodeInput.value=PREFIX+ui.decodeInput.value;
+     renderDecode();
+   }
+   ui.decodeInput.focus();
+   ui.decodeInput.setSelectionRange(PREFIX.length,PREFIX.length);
+ });
+ ui.copyDecoded.addEventListener('click',async()=>{
+   if(!decodedText)return;
+   try{await navigator.clipboard.writeText(decodedText);note('復号文をコピーしました');}
+   catch{note('復号文をコピーできませんでした',true);}
  });
  ui.plain.addEventListener('input',render);$('encrypt').addEventListener('click',()=>{render();note(encrypted?'変換しました。内容を確認してください':'入力欄に文章を入力してください',!encrypted);});
  $('clear').addEventListener('click',()=>{ui.plain.value='';render();note('');});
