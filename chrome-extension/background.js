@@ -45,5 +45,13 @@ chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{
  codec(msg.type==='FORCE_SYNC').then(d=>sendResponse({ok:true,codec:d,entries:Object.keys(d.pairs).length})).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));
  return true;
 });
-chrome.runtime.onInstalled.addListener(()=>{chrome.storage.sync.get('enabled').then(v=>{if(v.enabled===undefined)return chrome.storage.sync.set({enabled:false});});codec(true).catch(()=>{});});
+chrome.runtime.onInstalled.addListener(()=>{
+ chrome.storage.sync.get(['enabled','hideSignals']).then(v=>{
+   const updates={};
+   if(v.enabled===undefined)updates.enabled=true;
+   if(v.hideSignals===undefined)updates.hideSignals=false;
+   if(Object.keys(updates).length)return chrome.storage.sync.set(updates);
+ }).catch(()=>{});
+ codec(true).catch(()=>{});
+});
 chrome.runtime.onStartup.addListener(()=>{codec(true).catch(()=>{});});
