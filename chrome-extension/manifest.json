@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Re信号 - YouTube暗号化・復号",
+  "version": "1.1.0",
+  "description": "YouTubeコメントとライブチャットのRe信号を復号。暗号化・送信は送信先と内容を再確認して実行。",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://raw.githubusercontent.com/zero-lily/Re-Cipher/*"
+  ],
+  "action": {
+    "default_title": "Re信号 暗号化・復号",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
