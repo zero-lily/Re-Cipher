@@ -15,7 +15,14 @@
   'yt-live-chat-membership-item-renderer #message',
   'yt-live-chat-legacy-paid-message-renderer #message'
  ].join(',');
- let enabled=false, dict=null, seen=new Set(), scheduled=false, lastIssueTime=0, lastSendKey='', lastSendTime=0;
+ const POST_SELECTOR=[
+  'yt-live-chat-text-message-renderer','yt-live-chat-paid-message-renderer',
+  'yt-live-chat-paid-sticker-renderer','yt-live-chat-membership-item-renderer',
+  'yt-live-chat-legacy-paid-message-renderer',
+  'ytd-comment-view-model','ytd-comment-renderer'
+ ].join(',');
+ let enabled=true,hideSignals=false,dict=null,scheduled=false,lastIssueTime=0,lastSendKey='',lastSendTime=0;
+ const rendered=new Map();
  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  function decode(text){
   if(!dict)throw Error('辞書が未読込です');
@@ -41,60 +48,90 @@
   }
   return out;
  }
- // A standalone text comment is replaced visually; the original DOM remains intact.
+ // Keep YouTube's original message node. Visual changes are always reversible.
  function sourceText(el){
-   const clone=el.cloneNode(true);
-   clone.querySelectorAll('.re-cipher-output').forEach(node=>node.remove());
-   return (clone.textContent||'').trim();
- }
- function handle(el){
-   if(!el.isConnected || el.closest('.re-cipher-output'))return;
-   const t=sourceText(el);
-   if(!t.startsWith(PREFIX)){
-     if(el.dataset.reCipher==='yes')restore(el);
-     return;
-   }
-   const old=el.getAttribute('data-re-cipher-source');
-   if(old===t && el.dataset.reCipher==='yes')return;
-   restore(el);
-   if(!enabled || !dict || t.length<=PREFIX.length)return;
-   let decoded;try{decoded=decode(t);}catch{
-     if(Date.now()-lastIssueTime>60_000){lastIssueTime=Date.now();chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});}
-     return;
-   }
-   const span=document.createElement('span');span.className='re-cipher-output';span.setAttribute('data-re-cipher-generated','yes');
-   const p=document.createElement('span');p.className='re-cipher-prefix';p.textContent=PREFIX;
-   const body=document.createElement('span');body.className='re-cipher-decoded';body.textContent=decoded;
-   span.append(p,body);
-   // Preserve YouTube's native text and DOM for easy restoration and copy.
-   el.classList.add('re-cipher-original-hidden');
-   el.insertAdjacentElement('afterend',span);
-   el.dataset.reCipher='yes';el.setAttribute('data-re-cipher-source',t);seen.add(el);
+  const clone=el.cloneNode(true);
+  clone.querySelectorAll('.re-cipher-output').forEach(node=>node.remove());
+  return (clone.textContent||'').trim();
  }
  function restore(el){
+  const prev=rendered.get(el);
+  if(prev?.container)prev.container.classList.remove('re-cipher-item-hidden');
   el.classList.remove('re-cipher-original-hidden');
   if(el.nextElementSibling?.classList.contains('re-cipher-output'))el.nextElementSibling.remove();
-  delete el.dataset.reCipher;el.removeAttribute('data-re-cipher-source');seen.delete(el);
+  delete el.dataset.reCipher;
+  el.removeAttribute('data-re-cipher-source');
+  rendered.delete(el);
  }
- function scan(){scheduled=false;
-  if(!enabled){for(const el of [...seen])restore(el);return;}
-  if(!dict)return;
+ function handle(el){
+  if(!el.isConnected || el.closest('.re-cipher-output'))return;
+  // Avoid treating parent and nested child as two independent comments.
+  if(el.querySelector(SELECTORS))return;
+  const t=sourceText(el);
+  if(!t.startsWith(PREFIX)){
+   if(rendered.has(el))restore(el);
+   return;
+  }
+  const container=el.closest(POST_SELECTOR);
+  const wantHidden=hideSignals&&!!container;
+  const mode=wantHidden?'hidden':enabled&&dict&&t.length>PREFIX.length?'decoded':'encoded';
+  const previous=rendered.get(el);
+  if(previous?.text===t&&previous.mode===mode&&previous.container===container&&
+    (mode==='hidden'?container?.classList.contains('re-cipher-item-hidden'):el.nextElementSibling?.classList.contains('re-cipher-output')))return;
+  if(previous)restore(el);
+  if(wantHidden){
+   container.classList.add('re-cipher-item-hidden');
+   rendered.set(el,{text:t,mode,container});
+   return;
+  }
+  let body=t.slice(PREFIX.length);
+  let decoded=false;
+  if(enabled&&dict&&body){
+   try{body=decode(t);decoded=true;}
+   catch{
+    if(Date.now()-lastIssueTime>60_000){lastIssueTime=Date.now();chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});}
+   }
+  }
+  const span=document.createElement('span');
+  span.className='re-cipher-output';span.setAttribute('data-re-cipher-generated','yes');
+  const prefix=document.createElement('span');prefix.className='re-cipher-prefix';prefix.textContent=PREFIX;
+  const text=document.createElement('span');text.className=decoded?'re-cipher-decoded':'re-cipher-encoded';text.textContent=body;
+  span.append(prefix,text);
+  el.classList.add('re-cipher-original-hidden');
+  el.insertAdjacentElement('afterend',span);
+  el.dataset.reCipher='yes';el.setAttribute('data-re-cipher-source',t);
+  rendered.set(el,{text:t,mode:decoded?'decoded':'encoded',container});
+ }
+ function scan(){
+  scheduled=false;
+  for(const [el,prev] of rendered){
+   if(!el.isConnected){
+    if(prev.container)prev.container.classList.remove('re-cipher-item-hidden');
+    rendered.delete(el);
+   }
+  }
   for(const el of document.querySelectorAll(SELECTORS))handle(el);
-  for(const el of [...seen])if(!el.isConnected)seen.delete(el);
  }
  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(scan);}
- function load(){chrome.runtime.sendMessage({type:MSG},res=>{if(chrome.runtime.lastError)return;if(res?.ok){dict=res.codec;schedule();}});}
- chrome.storage.sync.get({enabled:false}).then(o=>{enabled=!!o.enabled;if(enabled)load();schedule();});
+ function reapply(){for(const el of [...rendered.keys()])restore(el);schedule();}
+ function load(){chrome.runtime.sendMessage({type:MSG},res=>{if(chrome.runtime.lastError)return;if(res?.ok){dict=res.codec;reapply();}});}
+ chrome.storage.sync.get({enabled:true,hideSignals:false}).then(o=>{
+  enabled=!!o.enabled;hideSignals=!!o.hideSignals;
+  if(enabled)load();
+  schedule();
+ });
  chrome.storage.onChanged.addListener((changes,area)=>{
-  if(area==='sync' && has(changes,'enabled')){enabled=!!changes.enabled.newValue;if(enabled)load();else schedule();}
-  if(area==='local' && has(changes,'codec') && enabled){dict=changes.codec.newValue;for(const el of [...seen])restore(el);schedule();}
+  if(area==='sync'){
+   if(has(changes,'enabled')){enabled=!!changes.enabled.newValue;if(enabled&&!dict)load();}
+   if(has(changes,'hideSignals'))hideSignals=!!changes.hideSignals.newValue;
+   if(has(changes,'enabled')||has(changes,'hideSignals'))reapply();
+  }
+  if(area==='local'&&has(changes,'codec')){dict=changes.codec.newValue;reapply();}
  });
  const observer=new MutationObserver(ms=>{
-   if(!enabled)return;
-   for(const m of ms){if(m.type==='childList'||m.type==='characterData'){schedule();break;}}
+  for(const m of ms){if(m.type==='childList'||m.type==='characterData'){schedule();break;}}
  });
  observer.observe(document.documentElement,{childList:true,characterData:true,subtree:true});
-
  // High-friction, fail-closed sending support. Only triggered by an explicit popup confirmation.
  function visible(el){
    if(!el || !el.isConnected || !el.getClientRects().length)return false;
