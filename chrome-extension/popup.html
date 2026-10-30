@@ -10,8 +10,17 @@
 <main class="wrap">
   <header class="head">
     <div><h1>Re信号 <span>暗号化・復号</span></h1><p>YouTubeコメント・ライブチャット用</p></div>
-    <span class="version">v1.1.4</span>
+    <span class="version">v1.1.5</span>
   </header>
+  <section id="confirm-panel" class="confirm hidden" aria-label="送信の最終確認">
+    <h2>送信前の確認</h2>
+    <label for="dest">送信先を確認してください</label>
+    <select id="dest"></select>
+    <div class="preview" id="preview"></div>
+    <p id="confirm-warn" class="small-note">内容と送信先が正しい場合のみ確定してください。</p>
+    <div class="row"><button id="cancel" type="button" class="subtle">戻る</button><button id="commit" type="button" class="danger" disabled>この内容を送信する</button></div>
+  </section>
+  <div class="notice" id="notice" role="status" aria-live="polite"></div>
   <div class="switch-group" aria-label="YouTube上の表示設定">
     <label class="toggle" for="enabled"><span><b>自動復号</b><small>初回はオン・復号文を緑色で表示</small></span><input class="switch" id="enabled" type="checkbox" role="switch"></label>
     <label class="toggle" for="hide-signals"><span><b>Re信号の投稿を非表示</b><small>コメント・チャット全体を隠す（優先）</small></span><input class="switch" id="hide-signals" type="checkbox" role="switch"></label>
@@ -34,16 +43,7 @@
     <div class="row"><button id="copy-decoded" type="button" class="subtle" disabled>復号文をコピー</button></div>
     <p class="small-note" id="decode-hint">Re信号: の後の暗号を入力してください。</p>
   </section>
-  <section id="confirm-panel" class="confirm hidden" aria-label="送信の最終確認">
-    <h2>送信前の確認</h2>
-    <label for="dest">送信先を確認してください</label>
-    <select id="dest"></select>
-    <div class="preview" id="preview"></div>
-    <p id="confirm-warn" class="small-note">内容と送信先が正しい場合のみ確定してください。</p>
-    <div class="row"><button id="cancel" type="button" class="subtle">戻る</button><button id="commit" type="button" class="danger" disabled>この内容を送信する</button></div>
-  </section>
-  <div class="notice" id="notice" role="status" aria-live="polite"></div>
-  <details class="settings"><summary>辞書と設定</summary>
+ <details class="settings"><summary>辞書と設定</summary>
     <div id="status">辞書を読み込み中…</div>
     <div id="decode-issue" class="issue hidden">復号できない投稿を検出しました。辞書が古い可能性があります。</div>
     <button id="update" type="button" class="subtle full">GitHubの辞書を確認・更新</button>
