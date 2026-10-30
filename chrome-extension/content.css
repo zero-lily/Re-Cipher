@@ -1,4 +1,6 @@
 .re-cipher-original-hidden{display:none!important}
+.re-cipher-item-hidden{display:none!important}
 .re-cipher-output{display:inline;white-space:pre-wrap;overflow-wrap:anywhere;line-height:inherit;font:inherit}
 .re-cipher-prefix{display:inline;color:#7653ab!important;font-weight:800!important;background:rgba(166,124,227,.13);border-radius:3px;padding:0 2px;margin-right:4px}
 .re-cipher-decoded{display:inline;color:#238f7d!important;font-weight:700!important;background:rgba(75,200,166,.12);border-bottom:1px solid rgba(35,143,125,.45);padding:0 2px;border-radius:2px}
+.re-cipher-encoded{display:inline;color:#bd7a30!important;font-weight:600!important;background:rgba(203,145,67,.12);border-radius:2px;padding:0 2px}
