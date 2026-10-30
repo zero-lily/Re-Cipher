@@ -176,15 +176,21 @@
      'ytd-comment-simplebox-renderer #contenteditable-root',
      'ytd-commentbox #contenteditable-root',
      'ytd-comment-simplebox-renderer [contenteditable]',
-     'ytd-commentbox [contenteditable]'
+     'ytd-commentbox [contenteditable]',
+     'ytd-comment-simplebox-renderer textarea',
+     'ytd-commentbox textarea'
    ];
    for(const el of descendants(document,selectors.join(','))){
-     if(!visible(el) || (!el.isContentEditable && !el.hasAttribute('contenteditable')))continue;
+     if(!visible(el))continue;
+     const textarea=el.matches('textarea');
+     if(textarea && (el.disabled||el.readOnly))continue;
+     if(!textarea && !el.isContentEditable && !el.hasAttribute('contenteditable'))continue;
      const reply=!!el.closest('ytd-comment-thread-renderer,ytd-comment-replies-renderer');
      if(kind==='comment'&&reply || kind==='reply'&&!reply)continue;
      found.add(el);
    }
-   return [...found];
+   const all=[...found];
+   return all.filter(el=>!all.some(child=>child!==el&&el.contains(child)));
  }
  function inspectTargets(){
    const result=[];
@@ -194,16 +200,48 @@
    }
    return result;
  }
+ // An unopened regular comment box has only a placeholder, not an editor.
+ // Open it during the first send-intent action; never insert or submit here.
+ async function prepareComment(){
+   if(!/^\/(watch|shorts)(?:$|\/)/.test(location.pathname))return {ok:true,opened:false,reason:'動画ページではありません'};
+   if(candidates('comment').length)return {ok:true,opened:false,reason:'入力欄は既に開いています'};
+   const roots=descendants(document,'ytd-comment-simplebox-renderer');
+   const placeholders=[];
+   for(const root of roots){
+     if(!visible(root)||root.closest('ytd-comment-thread-renderer,ytd-comment-replies-renderer'))continue;
+     const items=descendants(root,'#simplebox-placeholder,#placeholder-area');
+     const placeholder=items.find(el=>el.id==='simplebox-placeholder'&&visible(el))||items.find(el=>el.id==='placeholder-area'&&visible(el));
+     if(placeholder)placeholders.push(placeholder);
+   }
+   if(placeholders.length!==1)return {ok:true,opened:false,reason:'コメントする…が見つからないか複数あります'};
+   placeholders[0].click();
+   for(let i=0;i<8;i++){
+     if(candidates('comment').length===1)return {ok:true,opened:true,reason:'コメント欄を開きました'};
+     await new Promise(resolve=>setTimeout(resolve,120));
+   }
+   return {ok:true,opened:false,reason:'コメント欄の起動が完了しませんでした'};
+ }
  function buttons(kind,field){
-   let owner=kind==='live' ? field.closest('yt-live-chat-message-input-renderer') : field.closest('ytd-comment-simplebox-renderer,ytd-commentbox');
+   let owner=kind==='live' ? field.closest('yt-live-chat-message-input-renderer') : field.closest('ytd-commentbox,ytd-comment-simplebox-renderer');
    if(!owner && kind==='live') owner=descendants(document,'yt-live-chat-message-input-renderer').find(el=>el.contains(field) || el.shadowRoot?.contains(field));
    if(!owner)return [];
-   const selector=kind==='live'?'#send-button button,#send-button yt-button-shape button':'#submit-button button';
+   const selector=kind==='live'?'#send-button button,#send-button yt-button-shape button':'#submit-button button,#submit-button yt-button-shape button,button#submit-button';
    return [...new Set(descendants(owner,selector).filter(visible))];
  }
- function inputText(field){return (field.innerText||field.textContent||'').replace(/\u200b/g,'').trim();}
+ function inputText(field){
+   const raw=field.matches('textarea')?field.value:(field.innerText||field.textContent||'');
+   return raw.replace(/\u200b/g,'').trim();
+ }
  function insertText(field,text){
    field.focus();
+   if(field.matches('textarea')){
+     const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')?.set;
+     if(!setter)return false;
+     setter.call(field,text);
+     field.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));
+     field.dispatchEvent(new Event('change',{bubbles:true}));
+     return inputText(field)===text;
+   }
    const selection=window.getSelection();const range=document.createRange();range.selectNodeContents(field);range.collapse(false);selection.removeAllRanges();selection.addRange(range);
    const ok=document.execCommand('insertText',false,text);
    if(!ok && inputText(field)!==text){
@@ -225,7 +263,7 @@
      fields=candidates(kind);
      if(fields.length===1)field=fields[0];
    }
-   if(!field.isContentEditable && !field.hasAttribute('contenteditable'))return {ok:false,error:'チャット入力欄が有効になっていません。YouTube側でチャット欄を一度クリックしてください'};
+   if(!field.matches('textarea')&&!field.isContentEditable&&!field.hasAttribute('contenteditable'))return {ok:false,error:'入力欄が有効になっていません。YouTube側で一度クリックしてください'};
    if(inputText(field))return {ok:false,error:'入力欄に既存の下書きがあります。上書きせずに中断しました'};
    const key=location.href+kind+encoded;
    if(key===lastSendKey&&Date.now()-lastSendTime<15000)return {ok:false,error:'重複送信の可能性があるため中断しました'};
@@ -239,6 +277,7 @@
  }
  chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
    if(msg?.type==='RE_CIPHER_INSPECT'){reply({ok:true,targets:inspectTargets()});return;}
+   if(msg?.type==='RE_CIPHER_PREPARE_COMMENT'){prepareComment().then(reply).catch(e=>reply({ok:false,error:String(e?.message||e)}));return true;}
    if(msg?.type!=='RE_CIPHER_SEND')return;
    sendEncrypted(msg).then(reply).catch(e=>reply({ok:false,error:String(e?.message||e)}));
    return true;
