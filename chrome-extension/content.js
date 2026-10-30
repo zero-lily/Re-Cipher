@@ -96,31 +96,73 @@
  observer.observe(document.documentElement,{childList:true,characterData:true,subtree:true});
 
  // High-friction, fail-closed sending support. Only triggered by an explicit popup confirmation.
- function visible(el){return !!el && el.isConnected && el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden';}
- const TARGET_FIELDS={
-   live:['yt-live-chat-text-input-field-renderer #input[contenteditable="true"]','yt-live-chat-message-input-renderer #input[contenteditable="true"]'],
-   comment:['ytd-comment-simplebox-renderer #contenteditable-root[contenteditable="true"]','ytd-commentbox #contenteditable-root[contenteditable="true"]'],
-   reply:['ytd-commentbox #contenteditable-root[contenteditable="true"]']
- };
- function candidates(kind){
-   const found=[];
-   for(const css of TARGET_FIELDS[kind]||[]){
-     for(const el of document.querySelectorAll(css)){
-       if(!visible(el) || found.includes(el))continue;
-       // Replies are always inside a comment thread.
-       const reply=!!el.closest('ytd-comment-thread-renderer,ytd-comment-replies-renderer');
-       if(kind==='comment'&&reply)continue;
-       if(kind==='reply'&&!reply)continue;
-       found.push(el);
+ function visible(el){
+   if(!el || !el.isConnected || !el.getClientRects().length)return false;
+   const style=getComputedStyle(el);
+   return style.visibility!=='hidden' && style.display!=='none';
+ }
+ // Detect approved YouTube composers within their host, even when contenteditable
+ // is "plaintext-only" or enabled only on focus; support open Shadow DOM.
+ function descendants(root,selector){
+   const result=[], seen=new Set();
+   function walk(scope,depth){
+     if(!scope || depth>4)return;
+     const all=scope.querySelectorAll('*');
+     for(const el of all){
+       if(el.matches(selector) && !seen.has(el)){result.push(el);seen.add(el);}
+       if(el.shadowRoot)walk(el.shadowRoot,depth+1);
      }
    }
-   return found;
+   walk(root,0);
+   return result;
+ }
+ function candidates(kind){
+   const found=new Set();
+   if(kind==='live'){
+     const roots=descendants(document,'yt-live-chat-message-input-renderer,yt-live-chat-text-input-field-renderer');
+     for(const root of roots){
+       for(const el of descendants(root,'#input,[contenteditable="true"],[contenteditable="plaintext-only"],[role="textbox"]')){
+         if(!visible(el) || el.closest('#message,#items'))continue;
+         if(el.id!=='input' && !el.isContentEditable && !el.hasAttribute('contenteditable'))continue;
+         found.add(el);
+       }
+     }
+     if(!found.size && /\/live_chat(?:$|[?#])/.test(location.pathname)){
+       for(const el of descendants(document,'yt-live-chat-text-input-field-renderer #input,yt-live-chat-message-input-renderer #input')){
+         if(visible(el))found.add(el);
+       }
+     }
+     const all=[...found];
+     return all.filter(el=>!all.some(x=>x!==el && el.contains(x)));
+   }
+   const selectors=[
+     'ytd-comment-simplebox-renderer #contenteditable-root',
+     'ytd-commentbox #contenteditable-root',
+     'ytd-comment-simplebox-renderer [contenteditable]',
+     'ytd-commentbox [contenteditable]'
+   ];
+   for(const el of descendants(document,selectors.join(','))){
+     if(!visible(el) || (!el.isContentEditable && !el.hasAttribute('contenteditable')))continue;
+     const reply=!!el.closest('ytd-comment-thread-renderer,ytd-comment-replies-renderer');
+     if(kind==='comment'&&reply || kind==='reply'&&!reply)continue;
+     found.add(el);
+   }
+   return [...found];
+ }
+ function inspectTargets(){
+   const result=[];
+   for(const kind of ['live','comment','reply']){
+     const fields=candidates(kind);
+     if(fields.length)result.push({kind,count:fields.length,href:location.href,title:document.title||''});
+   }
+   return result;
  }
  function buttons(kind,field){
-   const owner=kind==='live' ? field.closest('yt-live-chat-message-input-renderer') : field.closest('ytd-comment-simplebox-renderer,ytd-commentbox');
+   let owner=kind==='live' ? field.closest('yt-live-chat-message-input-renderer') : field.closest('ytd-comment-simplebox-renderer,ytd-commentbox');
+   if(!owner && kind==='live') owner=descendants(document,'yt-live-chat-message-input-renderer').find(el=>el.contains(field) || el.shadowRoot?.contains(field));
    if(!owner)return [];
-   const selector=kind==='live'?'#send-button button':'#submit-button button';
-   return Array.from(owner.querySelectorAll(selector)).filter(visible);
+   const selector=kind==='live'?'#send-button button,#send-button yt-button-shape button':'#submit-button button';
+   return [...new Set(descendants(owner,selector).filter(visible))];
  }
  function inputText(field){return (field.innerText||field.textContent||'').replace(/\u200b/g,'').trim();}
  function insertText(field,text){
@@ -138,9 +180,15 @@
    if(!['live','comment','reply'].includes(kind)||typeof encoded!=='string'||!encoded.startsWith(PREFIX)||encoded.length>10000)return {ok:false,error:'送信内容が不正です'};
    if(kind==='live' && Array.from(encoded).length>200)return {ok:false,error:'ライブチャットの200文字上限を超えています'};
    if(location.href!==expectedHref)return {ok:false,error:'送信先のページが変わりました。送信操作を中断しました'};
-   const fields=candidates(kind);
-   if(fields.length!==1)return {ok:false,error:'入力欄を一意に特定できません。YouTubeの入力欄を開いて再試行してください'};
-   const field=fields[0];
+   let fields=candidates(kind);
+   if(fields.length!==1)return {ok:false,error:'入力欄を一意に特定できません。チャット欄をクリックして再試行してください（候補 '+fields.length+' 件）'};
+   let field=fields[0];
+   if(kind==='live' && !field.isContentEditable){
+     field.click();
+     fields=candidates(kind);
+     if(fields.length===1)field=fields[0];
+   }
+   if(!field.isContentEditable && !field.hasAttribute('contenteditable'))return {ok:false,error:'チャット入力欄が有効になっていません。YouTube側でチャット欄を一度クリックしてください'};
    if(inputText(field))return {ok:false,error:'入力欄に既存の下書きがあります。上書きせずに中断しました'};
    const key=location.href+kind+encoded;
    if(key===lastSendKey&&Date.now()-lastSendTime<15000)return {ok:false,error:'重複送信の可能性があるため中断しました'};
@@ -153,6 +201,7 @@
    return {ok:true,clicked:true,detail:'YouTubeの送信ボタンを押しました。チャット・コメント欄に表示されたか確認してください'};
  }
  chrome.runtime.onMessage.addListener((msg,sender,reply)=>{
+   if(msg?.type==='RE_CIPHER_INSPECT'){reply({ok:true,targets:inspectTargets()});return;}
    if(msg?.type!=='RE_CIPHER_SEND')return;
    sendEncrypted(msg).then(reply).catch(e=>reply({ok:false,error:String(e?.message||e)}));
    return true;
