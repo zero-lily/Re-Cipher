@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Re信号 - YouTube暗号化・復号",
-  "version": "1.1.2",
-  "description": "YouTubeコメントとライブチャットのRe信号を復号。暗号化・送信は送信先と内容を再確認して実行。",
+  "version": "1.1.3",
+  "description": "YouTubeのRe信号を自動復号・色分け・非表示に切り替え。手動復号・暗号化・送信確認にも対応。",
   "permissions": [
     "storage",
     "activeTab",
