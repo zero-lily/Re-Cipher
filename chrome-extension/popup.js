@@ -6,6 +6,9 @@
  let dict=null,trie=null,encrypted='',currentPlain='',pending=null,decodedText='';
  const symbolLen=s=>Array.from(s).length;
  const note=(s,error=false)=>{ui.notice.textContent=s;ui.notice.className='notice '+(error?'error':'success');};
+ // All send status and final confirmation are located immediately below the title.
+ // This is the scroll container in Chrome's fixed-height popup.
+ const scrollToConfirmation=()=>{const pane=document.querySelector('.wrap');if(pane)pane.scrollTop=0;};
  chrome.storage.sync.get({enabled:true,hideSignals:false}).then(v=>{ui.enabled.checked=!!v.enabled;ui.hide.checked=!!v.hideSignals;});
  ui.enabled.addEventListener('change',()=>chrome.storage.sync.set({enabled:ui.enabled.checked}));
  ui.hide.addEventListener('change',()=>chrome.storage.sync.set({hideSignals:ui.hide.checked}));
@@ -186,7 +189,7 @@
  const LABEL={live:'ライブチャット',comment:'通常コメント',reply:'コメントへの返信'};
  ui.send.addEventListener('click',async()=>{
    render();if(!encrypted)return;
-   ui.send.disabled=true;pending=null;ui.confirm.classList.add('hidden');note('YouTubeの送信先を確認中…');
+   ui.send.disabled=true;pending=null;ui.confirm.classList.add('hidden');note('YouTubeの送信先を確認中…');scrollToConfirmation();
    try{
      const targets=await inspectTargets();
      if(!targets.length)throw Error('送信できる入力欄が見つかりません。動画の「コメントする…」を一度クリックするか、チャット欄を開いて再試行してください。コピーは利用できます');
@@ -195,7 +198,8 @@
      for(let i=0;i<targets.length;i++){const t=targets[i];const hint=t.title.slice(0,28);ui.dest.add(new Option(`${LABEL[t.kind]}${hint?' / '+hint:''}`,String(i)));}
      ui.dest.value=targets.length===1?'0':'';
      ui.preview.textContent=encrypted;ui.confirm.classList.remove('hidden');updateConfirmation();note('送信先・暗号文を確認し、問題なければ確定してください');
-   }catch(e){note(e.message,true);}finally{ui.send.disabled=!encrypted;}
+     scrollToConfirmation();ui.dest.focus({preventScroll:true});
+   }catch(e){note(e.message,true);scrollToConfirmation();}finally{ui.send.disabled=!encrypted;}
  });
  function updateConfirmation(){
    if(!pending){ui.commit.disabled=true;return;}
@@ -215,8 +219,8 @@
      const r=await chrome.tabs.sendMessage(target.tabId,{type:'RE_CIPHER_SEND',kind:target.kind,encoded:text,expectedHref:target.href},{frameId:target.frameId});
      if(!r?.ok)throw Error(r?.error||'送信に失敗しました');
      note(r.detail||'送信操作を行いました');
-     ui.confirm.classList.add('hidden');pending=null;
-   }catch(e){note(e.message,true);updateConfirmation();}
+     ui.confirm.classList.add('hidden');pending=null;scrollToConfirmation();
+   }catch(e){note(e.message,true);updateConfirmation();scrollToConfirmation();}
  });
  loadDictionary().catch(e=>{note(e.message,true);showStatus();});
 })();
