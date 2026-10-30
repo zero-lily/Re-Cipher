@@ -1,0 +1,63 @@
+name: Publish Chrome extension ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/chrome-extension-release.yml"
+      - "chrome-extension/manifest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Package only the Chrome extension
+        id: package
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, zipfile, os
+          source = pathlib.Path("chrome-extension")
+          manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
+          version = manifest["version"]
+          assert manifest["manifest_version"] == 3
+          files = sorted(p for p in source.rglob("*") if p.is_file() and not any(c.startswith(".") for c in p.relative_to(source).parts))
+          assert (source / "manifest.json") in files
+          destination = pathlib.Path("Re-Cipher-Chrome-v" + version + ".zip")
+          with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+              for p in files:
+                  archive.write(p, p.relative_to(source).as_posix())
+          with zipfile.ZipFile(destination) as archive:
+              assert "manifest.json" in archive.namelist()
+              assert not any(name.startswith("chrome-extension/") for name in archive.namelist())
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("version=" + version + "\n")
+              out.write("file=" + destination.name + "\n")
+          print("Built", destination, "from", len(files), "Chrome extension files")
+          PY
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.package.outputs.version }}
+          FILE: ${{ steps.package.outputs.file }}
+        run: |
+          set -euo pipefail
+          TAG="chrome-v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists. Bump chrome-extension/manifest.json version for a new release."
+            exit 1
+          fi
+          gh release create "$TAG" "$FILE" \
+            --target "$GITHUB_SHA" \
+            --title "Re信号 Chrome拡張 v${VERSION}" \
+            --notes "Chrome拡張機能のみを含むインストール用ZIPです。ZIPを展開し、Chromeの chrome://extensions からデベロッパーモードを有効にして「パッケージ化されていない拡張機能を読み込む」で展開先フォルダを選択してください。GitHubが自動表示する Source code (zip) はサイトなどを含むリポジトリ全体のアーカイブです。インストールには Re-Cipher-Chrome-v${VERSION}.zip を使用してください。" \
+            --latest
