@@ -60,35 +60,34 @@
  ui.plain.addEventListener('input',render);$('encrypt').addEventListener('click',()=>{render();note(encrypted?'変換しました。内容を確認してください':'入力欄に文章を入力してください',!encrypted);});
  $('clear').addEventListener('click',()=>{ui.plain.value='';render();note('');});
  ui.copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(encrypted);note('暗号文をコピーしました');}catch{note('コピーできませんでした。結果欄から手動コピーしてください',true);}});
- // Read-only probe executed in every accessible YouTube frame.
- function inspectFrame(){
-   const visible=e=>e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';
-   const groups={
-     live:['yt-live-chat-text-input-field-renderer #input[contenteditable="true"]','yt-live-chat-message-input-renderer #input[contenteditable="true"]'],
-     comment:['ytd-comment-simplebox-renderer #contenteditable-root[contenteditable="true"]','ytd-commentbox #contenteditable-root[contenteditable="true"]'],
-     reply:['ytd-commentbox #contenteditable-root[contenteditable="true"]']
-   };
-   const results=[];
-   for(const [kind,selectors] of Object.entries(groups)){
-     const found=new Set();
-     for(const selector of selectors)for(const e of document.querySelectorAll(selector)){
-       if(!visible(e)||found.has(e))continue;found.add(e);
-       const reply=!!e.closest('ytd-comment-thread-renderer,ytd-comment-replies-renderer');
-       if(kind==='comment'&&reply || kind==='reply'&&!reply)continue;
-       results.push({kind,href:location.href,title:document.title||''});
-     }
-   }
-   return results;
- }
+ // Discover only YouTube frames, not unrelated advertising iframes.
+ // Each frame uses the same target detection as the final send handler.
  function getActiveTab(){return chrome.tabs.query({active:true,currentWindow:true}).then(a=>a[0]);}
  async function inspectTargets(){
    const tab=await getActiveTab();
    if(!tab||!/^https:\/\/(www|m)\.youtube\.com\//.test(tab.url||''))throw Error('YouTubeの動画ページを開いてください');
-   let frames;
-   try{frames=await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},func:inspectFrame});}
-   catch{throw Error('YouTubeの入力欄を確認できません。ページを再読み込みしてください');}
+   const frames=await chrome.webNavigation.getAllFrames({tabId:tab.id});
+   if(!frames)throw Error('チャットのフレームを取得できません。YouTubeのページを再読み込みしてください');
+   const allowed=frames.filter(f=>{
+     try {const u=new URL(f.url);return u.protocol==='https:' && ['www.youtube.com','m.youtube.com'].includes(u.hostname);}
+     catch{return false;}
+   });
    const all=[];
-   for(const frame of frames){for(const x of frame.result||[])all.push({...x,frameId:frame.frameId,tabId:tab.id,tabURL:tab.url});}
+   for(const frame of allowed){
+     let r;
+     try{r=await chrome.tabs.sendMessage(tab.id,{type:'RE_CIPHER_INSPECT'},{frameId:frame.frameId});}
+     catch{
+       try{
+         await chrome.scripting.executeScript({target:{tabId:tab.id,frameIds:[frame.frameId]},files:['content.js']});
+         r=await chrome.tabs.sendMessage(tab.id,{type:'RE_CIPHER_INSPECT'},{frameId:frame.frameId});
+       }catch{continue;}
+     }
+     if(!r?.ok)continue;
+     for(const target of r.targets||[]){
+       if(target.count!==1)continue;
+       all.push({kind:target.kind,href:target.href,title:target.title,frameId:frame.frameId,tabId:tab.id,tabURL:tab.url});
+     }
+   }
    return all;
  }
  const LABEL={live:'ライブチャット',comment:'通常コメント',reply:'コメントへの返信'};
