@@ -14,7 +14,7 @@ YouTube上で `Re信号:` を含むコメントやライブチャットを自動
 
 **[最新版の拡張機能をダウンロード（GitHub Releases）](https://github.com/zero-lily/Re-Cipher/releases/latest)**
 
-Releasesの「Assets」にある **`Re-Cipher-Chrome-v*.zip`**（最新版は v1.1.3）をダウンロードしてください。
+Releasesの「Assets」にある **`Re-Cipher-Chrome-v*.zip`**（最新版は v1.1.4）をダウンロードしてください。
 
 > **注意：** GitHubが自動表示する **`Source code (zip)`** はWebサイト等を含むリポジトリ全体のソースです。Chrome拡張のインストールには **`Re-Cipher-Chrome-v*.zip`** を使用してください。
 
