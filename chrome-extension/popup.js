@@ -145,6 +145,7 @@
      catch{return false;}
    });
    const all=[];
+   let commentFrame=null;
    for(const frame of allowed){
      let r;
      try{r=await chrome.tabs.sendMessage(tab.id,{type:'RE_CIPHER_INSPECT'},{frameId:frame.frameId});}
@@ -158,6 +159,26 @@
      for(const target of r.targets||[]){
        if(target.count!==1)continue;
        all.push({kind:target.kind,href:target.href,title:target.title,frameId:frame.frameId,tabId:tab.id,tabURL:tab.url});
+       if(target.kind==='comment')commentFrame=frame;
+     }
+   }
+   // During the user's first "暗号化して送信…" action, open the regular
+   // video comment placeholder if no active editor exists. This does not
+   // insert text or publish anything; the final confirmation is still required.
+   if(!commentFrame){
+     const top=allowed.find(frame=>frame.frameId===0);
+     if(top && /\/(watch|shorts)(?:$|[?\/])/.test(new URL(tab.url).pathname)){
+       try{
+         const opened=await chrome.tabs.sendMessage(tab.id,{type:'RE_CIPHER_PREPARE_COMMENT'},{frameId:0});
+         if(opened?.opened){
+           const verified=await chrome.tabs.sendMessage(tab.id,{type:'RE_CIPHER_INSPECT'},{frameId:0});
+           const found=(verified?.targets||[]).filter(x=>x.kind==='comment'&&x.count===1);
+           if(found.length===1){
+             const target=found[0];
+             all.push({kind:'comment',href:target.href,title:target.title,frameId:0,tabId:tab.id,tabURL:tab.url});
+           }
+         }
+       }catch{/* Keep independently detected chat or reply targets available. */}
      }
    }
    return all;
@@ -168,7 +189,7 @@
    ui.send.disabled=true;pending=null;ui.confirm.classList.add('hidden');note('YouTubeの送信先を確認中…');
    try{
      const targets=await inspectTargets();
-     if(!targets.length)throw Error('送信できる入力欄が見つかりません。YouTubeでコメント欄／チャット欄を開いてください。コピーは利用できます');
+     if(!targets.length)throw Error('送信できる入力欄が見つかりません。動画の「コメントする…」を一度クリックするか、チャット欄を開いて再試行してください。コピーは利用できます');
      pending={text:encrypted,targets};ui.dest.replaceChildren();
      if(targets.length>1){const o=new Option('送信先を選択してください','');ui.dest.append(o);}
      for(let i=0;i<targets.length;i++){const t=targets[i];const hint=t.title.slice(0,28);ui.dest.add(new Option(`${LABEL[t.kind]}${hint?' / '+hint:''}`,String(i)));}
