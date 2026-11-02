@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
- const PREFIX='Re信号:';
+ const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
+ const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const $=id=>document.getElementById(id);
  const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded')};
  let dict=null,trie=null,encrypted='',currentPlain='',pending=null,decodedText='';
@@ -39,9 +40,10 @@
  function decode(text){
    if(!dict)throw Error('辞書を読み込み中です');
    const input=text.trim();
-   if(!input.startsWith(PREFIX))throw Error('「Re信号:」から始まる暗号を入力してください');
-   const data=Array.from(input.slice(PREFIX.length).trim());
-   if(!data.length)throw Error('Re信号: の後に暗号を入力してください');
+   const prefix=prefixOf(input);
+   if(!prefix)throw Error('「ネタバレ防止言語:」から始まる暗号を入力してください');
+   const data=Array.from(input.slice(prefix.length).trim());
+   if(!data.length)throw Error('ネタバレ防止言語: の後に暗号を入力してください');
    const alphabet=Array.from(dict.alphabet),digits=Array.from(dict.katakana);
    const values=new Map(alphabet.map((ch,i)=>[ch,i]));
    const digitValues=new Map(digits.map((ch,i)=>[ch,i]));
@@ -75,9 +77,9 @@
    const raw=ui.decodeInput.value.trim();
    decodedText='';ui.copyDecoded.disabled=true;ui.decodedCount.textContent='0文字';
    ui.decodeHint.classList.remove('error');
-   if(!raw||raw===PREFIX){
+   if(!raw||raw===PREFIX||raw===LEGACY_PREFIX){
      ui.decodedResult.textContent='ここに元の文章が表示されます';
-     ui.decodeHint.textContent='Re信号: の後の暗号を入力してください。';
+     ui.decodeHint.textContent='ネタバレ防止言語: の後の暗号を入力してください。';
      return;
    }
    try{
@@ -120,12 +122,13 @@
  ui.decodeInput.addEventListener('input',renderDecode);
  $('clear-decode').addEventListener('click',()=>{ui.decodeInput.value='';renderDecode();ui.decodeInput.focus();});
  $('insert-prefix').addEventListener('click',()=>{
-   if(!ui.decodeInput.value.trimStart().startsWith(PREFIX)){
+   if(!prefixOf(ui.decodeInput.value.trimStart())){
      ui.decodeInput.value=PREFIX+ui.decodeInput.value;
      renderDecode();
    }
    ui.decodeInput.focus();
-   ui.decodeInput.setSelectionRange(PREFIX.length,PREFIX.length);
+   const start=prefixOf(ui.decodeInput.value.trimStart())||PREFIX;
+   ui.decodeInput.setSelectionRange(start.length,start.length);
  });
  ui.copyDecoded.addEventListener('click',async()=>{
    if(!decodedText)return;
