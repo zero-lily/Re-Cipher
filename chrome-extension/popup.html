@@ -10,7 +10,7 @@
 <main class="wrap">
   <header class="head">
     <div><h1>Re信号 <span>暗号化・復号</span></h1><p>YouTubeコメント・ライブチャット用</p></div>
-    <span class="version">v1.1.5</span>
+    <span class="version">v1.1.6</span>
   </header>
   <section id="confirm-panel" class="confirm hidden" aria-label="送信の最終確認">
     <h2>送信前の確認</h2>
@@ -23,7 +23,7 @@
   <div class="notice" id="notice" role="status" aria-live="polite"></div>
   <div class="switch-group" aria-label="YouTube上の表示設定">
     <label class="toggle" for="enabled"><span><b>自動復号</b><small>初回はオン・復号文を緑色で表示</small></span><input class="switch" id="enabled" type="checkbox" role="switch"></label>
-    <label class="toggle" for="hide-signals"><span><b>Re信号の投稿を非表示</b><small>コメント・チャット全体を隠す（優先）</small></span><input class="switch" id="hide-signals" type="checkbox" role="switch"></label>
+    <label class="toggle" for="hide-signals"><span><b>暗号投稿を非表示</b><small>コメント・チャット全体を隠す（優先）</small></span><input class="switch" id="hide-signals" type="checkbox" role="switch"></label>
   </div>
   <section class="tool" aria-label="暗号化ツール">
     <div class="sectionhead"><h2>暗号化</h2><span id="char-count">0文字</span></div>
@@ -36,12 +36,12 @@
   </section>
   <section class="tool decode-tool" aria-label="手動復号ツール">
     <div class="sectionhead"><h2>復号</h2><span>貼り付けると自動復号</span></div>
-    <textarea id="decode-input" rows="3" spellcheck="false" placeholder="Re信号: から始まる暗号を貼り付け"></textarea>
-    <div class="row"><button id="insert-prefix" type="button" class="subtle">＋ Re信号: を入力</button><button id="clear-decode" type="button" class="textbutton">クリア</button></div>
+    <textarea id="decode-input" rows="3" spellcheck="false" placeholder="ネタバレ防止言語: から始まる暗号を貼り付け"></textarea>
+    <div class="row"><button id="insert-prefix" type="button" class="subtle">＋ ネタバレ防止言語: を入力</button><button id="clear-decode" type="button" class="textbutton">クリア</button></div>
     <div class="output-label"><strong>復号結果</strong><span id="decoded-count">0文字</span></div>
     <div class="result" id="decoded-result" role="status" aria-live="polite">ここに元の文章が表示されます</div>
     <div class="row"><button id="copy-decoded" type="button" class="subtle" disabled>復号文をコピー</button></div>
-    <p class="small-note" id="decode-hint">Re信号: の後の暗号を入力してください。</p>
+    <p class="small-note" id="decode-hint">ネタバレ防止言語: の後の暗号を入力してください。</p>
   </section>
  <details class="settings"><summary>辞書と設定</summary>
     <div id="status">辞書を読み込み中…</div>
