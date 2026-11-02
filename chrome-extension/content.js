@@ -2,7 +2,8 @@
 (()=>{
  if(globalThis.__reCipherContentLoaded)return;
  globalThis.__reCipherContentLoaded=true;
- const PREFIX='Re信号:';
+ const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
+ const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const MSG='GET_CODEC';
  const SELECTORS=[
   'ytd-comment-view-model #content-text',
@@ -26,7 +27,8 @@
  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  function decode(text){
   if(!dict)throw Error('辞書が未読込です');
-  const source=text.slice(PREFIX.length),data=Array.from(source.trim());
+  const prefix=prefixOf(text);if(!prefix)throw Error('接頭辞がありません');
+  const source=text.slice(prefix.length),data=Array.from(source.trim());
   const chars=Array.from(dict.alphabet),values=new Map(chars.map((c,i)=>[c,i]));
   const digits=Array.from(dict.katakana),digitValues=new Map(digits.map((c,i)=>[c,i]));
   let out='';
@@ -68,13 +70,14 @@
   // Avoid treating parent and nested child as two independent comments.
   if(el.querySelector(SELECTORS))return;
   const t=sourceText(el);
-  if(!t.startsWith(PREFIX)){
+  const currentPrefix=prefixOf(t);
+  if(!currentPrefix){
    if(rendered.has(el))restore(el);
    return;
   }
   const container=el.closest(POST_SELECTOR);
   const wantHidden=hideSignals&&!!container;
-  const mode=wantHidden?'hidden':enabled&&dict&&t.length>PREFIX.length?'decoded':'encoded';
+  const mode=wantHidden?'hidden':enabled&&dict&&t.length>currentPrefix.length?'decoded':'encoded';
   const previous=rendered.get(el);
   if(previous?.text===t&&previous.mode===mode&&previous.container===container&&
     (mode==='hidden'?container?.classList.contains('re-cipher-item-hidden'):el.nextElementSibling?.classList.contains('re-cipher-output')))return;
@@ -84,7 +87,7 @@
    rendered.set(el,{text:t,mode,container});
    return;
   }
-  let body=t.slice(PREFIX.length);
+  let body=t.slice(currentPrefix.length);
   let decoded=false;
   if(enabled&&dict&&body){
    try{body=decode(t);decoded=true;}
@@ -94,7 +97,7 @@
   }
   const span=document.createElement('span');
   span.className='re-cipher-output';span.setAttribute('data-re-cipher-generated','yes');
-  const prefix=document.createElement('span');prefix.className='re-cipher-prefix';prefix.textContent=PREFIX;
+  const prefix=document.createElement('span');prefix.className='re-cipher-prefix';prefix.textContent=currentPrefix;
   const text=document.createElement('span');text.className=decoded?'re-cipher-decoded':'re-cipher-encoded';text.textContent=body;
   span.append(prefix,text);
   el.classList.add('re-cipher-original-hidden');
