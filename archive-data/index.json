@@ -2,11 +2,19 @@
   "format": "recipher-index-v1",
   "videos": [
     {
+      "videoId": "hiYdiF8PnMI",
+      "title": "リゼロを記憶喪失後から観ればスバルの気持ちわかる説【リゼロ第２２・２３話／同時視聴】",
+      "channel": "新宝島トーア",
+      "count": 4664,
+      "source": "yt-dlp live_chat replay (user-provided file)",
+      "updatedAt": "2026-11-09"
+    },
+    {
       "videoId": "NbVDBdORxvE",
-      "title": "リゼロを記憶喪失後から観ればスバルの気持ちわかる説【第16〜18話・同時視聴】",
+      "title": "リゼロを記憶喪失後から観ればスバルの気持ちわかる説【リゼロ第１６～１８話/同時視聴】",
       "channel": "新宝島トーア",
       "count": 7006,
-      "source": "既存CSV",
+      "source": "既存の収集済みチャットCSV",
       "updatedAt": "2026-11-09"
     }
   ]
