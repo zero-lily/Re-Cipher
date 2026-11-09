@@ -100,19 +100,6 @@
   info.append(author,body);el.append(time,info);return el;
  }
  function render(force=false){
-  const demo=$('demo-result');
-  if(demo){
-   demo.replaceChildren();
-   if($('hide-toggle').checked)demo.textContent='（暗号投稿を非表示にしています）';
-   else{
-    const original='ネタバレ防止言語:ト愛',p=document.createElement('span');
-    p.className='prefix';p.textContent='ネタバレ防止言語:';
-    const v=document.createElement('span');
-    v.className=$('decode-toggle').checked&&state.codec?'decoded':'cipher';
-    v.textContent=v.className==='decoded'?decode(original):'ト愛';
-    demo.append(p,document.createTextNode(' '),v);
-   }
-  }
   const t=getTime();
   const end=upperBound(state.messages,t);
   const key=Number($('decode-toggle').checked)+'-'+Number($('hide-toggle').checked)+'-'+Number($('follow-toggle').checked);
@@ -183,8 +170,7 @@
    if(n!==state.loadSerial)return;
    state.title='YouTube動画 ('+id+')';$('video-title').textContent=state.title;
    $('chat-count').textContent='チャット未取得';
-   $('import-details').open=true;
-   st('この動画のチャットはまだ登録されていません。yt-dlpで取得したファイルを指定すると、この端末ですぐ表示できます。',true);
+   st('この動画のチャットはまだ登録されていません。動画は再生できますが、チャットの表示・復号は利用できません。',true);
    render(true);
   }
  }
@@ -205,65 +191,9 @@
   if(id){sel.value=id;await openVideo(id);}
   else st('動画のURLを指定してください。');
  }
- function readCSV(csv){
-  const rows=[],row=[];let field='',inside=false;
-  for(let i=0;i<csv.length;i++){
-   const c=csv[i];
-   if(inside){if(c==='"'&&csv[i+1]==='"'){field+='"';i++;}else if(c==='"')inside=false;else field+=c;}
-   else if(c==='"')inside=true;
-   else if(c===','){row.push(field);field='';}
-   else if(c==='\n'){row.push(field.replace(/\r$/,''));rows.push([...row]);row.length=0;field='';}
-   else field+=c;
-  }
-  if(field||row.length){row.push(field);rows.push([...row]);}
-  const headings=rows.shift().map(x=>x.replace(/^\uFEFF/,''));
-  const secs=headings.indexOf('video_seconds'),author=headings.indexOf('author'),text=headings.indexOf('text');
-  if(secs<0||text<0)throw Error('CSVには video_seconds と text 列が必要です');
-  return rows.map(r=>[Number(r[secs]),r[author]||'視聴者',r[text]||'']);
- }
- function runs(data){
-  const arr=data?.runs||[];
-  return arr.map(r=>r.text??r.emoji?.shortcuts?.[0]??r.emoji?.emojiId??'').join('')||data?.simpleText||'';
- }
- function readChatReplay(raw){
-  const rows=[];
-  for(const line of raw.split(/\r?\n/)){
-   if(!line.trim())continue;
-   let json;try{json=JSON.parse(line);}catch{continue;}
-   const replay=json.replayChatItemAction;
-   if(!replay)continue;
-   const time=Number(replay.videoOffsetTimeMsec)/1000;
-   if(!Number.isFinite(time))continue;
-   for(const action of replay.actions||[]){
-    const item=action.addChatItemAction?.item||action.replaceChatItemAction?.replacementItem||{};
-    const msg=item.liveChatTextMessageRenderer||item.liveChatPaidMessageRenderer||item.liveChatMembershipItemRenderer;
-    if(!msg)continue;
-    const text=runs(msg.message)||runs(msg.headerSubtext);
-    if(!text)continue;
-    rows.push([time,runs(msg.authorName)||'視聴者',text]);
-   }
-  }
-  return rows;
- }
- async function importFile(file){
-  if(!file)return;
-  try{
-   if(file.size>20*1024*1024)throw Error('ファイルが大きすぎます（20MB以内）');
-   const txt=await file.text();let messages;
-   if(/\.csv$/i.test(file.name))messages=readCSV(txt);
-   else{
-    let data;try{data=JSON.parse(txt);}catch{data=null;}
-    if(data?.messages)messages=normalized(data);else messages=readChatReplay(txt);
-   }
-   if(!messages?.length)throw Error('チャットメッセージを読み取れませんでした');
-   if(!state.id)throw Error('先にYouTubeの動画を選択してください');
-   setMessages({videoId:state.id,title:state.title||'YouTubeアーカイブ',messages},'端末内ファイル');
-  }catch(e){st(e.message,true);}
- }
  $('select-video').addEventListener('click',()=>openVideo($('video-select').value));
  $('open-url').addEventListener('click',()=>openVideo(videoId($('video-url').value)));
  $('video-url').addEventListener('keydown',e=>{if(e.key==='Enter')openVideo(videoId($('video-url').value));});
- $('chat-file').addEventListener('change',e=>{importFile(e.target.files?.[0]);});
  for(const id of ['decode-toggle','hide-toggle','follow-toggle'])$(id).addEventListener('change',()=>render(true));
  $('back30').addEventListener('click',()=>{if(state.playerReady)state.player.seekTo(Math.max(0,getTime()-30),true);render(true);});
  $('forward30').addEventListener('click',()=>{if(state.playerReady)state.player.seekTo(getTime()+30,true);render(true);});
