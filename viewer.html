@@ -87,7 +87,6 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
   <button id="open-url" class="btn" type="button">URLを開く</button>
  </div>
  <p class="help" style="margin:8px 0 0">取得済みの動画はすぐ復号できます。未取得の動画は、動画プレーヤーを開いた後でチャットファイルを追加できます。</p>
- <p class="help" style="margin:5px 0 0">管理者向け：<a href="https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml" target="_blank" rel="noopener noreferrer">URLを指定してアーカイブを取り込む（GitHub Actions）</a></p>
  <div id="status" class="status" role="status" aria-live="polite"></div>
 </section>
 <div class="layout">
@@ -107,11 +106,6 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
     <p class="help"><strong>yt-dlp の .live_chat.json</strong>、または以前取得したCSVに対応しています。ファイルは端末内で処理され、サイトにアップロードされません。</p>
     <input type="file" id="chat-file" accept=".json,.jsonl,.csv,application/json,text/csv" aria-label="チャットデータを読み込む">
     <p class="help">取得方法（PC）：<code>yt-dlp --skip-download --write-subs --sub-langs live_chat --sub-format json "YouTubeのURL"</code></p>
-    <div class="hrow" style="margin-top:11px">
-      <button id="export-chat" type="button" class="btn soft" disabled>GitHub登録用JSONを保存</button>
-      <a class="help" href="https://github.com/zero-lily/Re-Cipher/upload/main/archive-data" target="_blank" rel="noopener noreferrer">保存したJSONをGitHubにアップロード</a>
-    </div>
-    <p class="help">GitHubにアップロードすると、そのチャットデータは一般公開されます。ファイル名は変更せずに <code>archive-data/</code> へ追加してください。登録後はサイトの一覧に自動追加されます。</p>
    </details>
   </div>
  </div>
