@@ -1,0 +1,62 @@
+name: Import YouTube archived chat (yt-dlp)
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'YouTubeアーカイブURL（または11文字の動画ID）'
+        type: string
+        required: true
+  schedule:
+    # Check Toa's archived streams daily (not an active livestream relay).
+    - cron: '21 3 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recipher-archive-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install yt-dlp
+        run: python -m pip install --upgrade "yt-dlp[default]"
+      - name: Import requested video or recent Toa archives
+        env:
+          REQUEST_VIDEO: ${{ inputs.video_url }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            python scripts/import_archive.py --video "$REQUEST_VIDEO"
+          else
+            python scripts/import_archive.py --discover-channel
+          fi
+      - name: Commit imported chat data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add archive-data/
+          if git diff --cached --quiet; then
+            echo "No new archive data."
+            exit 0
+          fi
+          git commit -m "data: update YouTube archive chat replay"
+          git pull --rebase origin main
+          git push origin HEAD:main
