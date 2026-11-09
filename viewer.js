@@ -264,7 +264,7 @@
  }
  function exportArchiveFile(){
   if(!state.id||!state.messages.length){st('先にチャットファイルを読み込んでください。',true);return;}
-  if(!/^[\\w-]{11}$/.test(state.id)){st('動画IDが正しくありません。',true);return;}
+  if(!/^[\w-]{11}$/.test(state.id)){st('動画IDが正しくありません。',true);return;}
   const data={
    format:'recipher-chat-v1',
    videoId:state.id,title:state.title||('YouTubeアーカイブ '+state.id),
