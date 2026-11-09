@@ -20,18 +20,40 @@ YouTubeのコメントやライブチャットで使う非公式の換字ツー�
 
 ### ほかのアーカイブをサイトの一覧に追加する
 
-リポジトリに書き込みできるユーザーは、[Import YouTube archived chat ワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml) の「Run workflow」から動画URLを指定できます。
+**GitHub Actionsでの直接取得（簡単ですが、YouTubeから拒否されることがあります）**
 
-GitHub Actionsが `yt-dlp` で**チャットリプレイのみ**を取得し、`archive-data/VIDEO_ID.json` と `archive-data/index.json` を生成してコミットします。動画ファイルは保存しません。
+リポジトリの管理者は、[Import YouTube archived chat ワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml) の「Run workflow」で動画URLを指定できます。Denoを追加し、yt-dlpの代替取得方式も試しますが、**GitHub Actions実行環境のIPがYouTubeにブロックされる場合は成功を保証できません**。YouTubeのCookieをGitHubへ登録しないでください。
 
-また、スケジュール実行では新宝島トーアの最新アーカイブを1日1回確認します。ただし、YouTubeによるアクセス制限・リプレイ未提供・配信者の設定などにより取得できない動画があります。**GitHub Pagesそのものでは、未取得の動画URLを貼っただけでyt-dlpを実行することはできません。**
+**GitHub ActionsがYouTubeに拒否されたとき（Windows PCから取得・アップロード）**
 
-ローカルで実行する場合：
+1. WindowsのPowerShellで下記の2行を一度だけ実行し、yt-dlpとDenoをインストールします。
+2. PowerShellを一度閉じ、開き直してから動画URLを指定して取得します。
+3. [アーカイブビューア](https://zero-lily.github.io/Re-Cipher/viewer.html)で同じ動画URLを開き、取得した `.live_chat.json` ファイルを選びます。
+4. 「GitHub登録用JSONを保存」を押すと `動画ID.json` が生成されます。これは公開するチャット本文を含むファイルです。
+5. [GitHubの `archive-data/` へのアップロード](https://github.com/zero-lily/Re-Cipher/upload/main/archive-data)で保存したJSONを追加し、「Commit changes」を押します。自動ワークフローがアーカイブ一覧を更新します。一般公開されるため、ファイルの中身を確認してください。
 
-```bash
-pip install 'yt-dlp[default]'
-python scripts/import_archive.py --video 'https://www.youtube.com/watch?v=VIDEO_ID'
+インストール：
+
+```powershell
+winget install --source winget --id yt-dlp.yt-dlp
+winget install --source winget --id DenoLand.Deno
 ```
+
+チャットのみ取得（例：今回失敗した動画）：
+
+```powershell
+yt-dlp --no-playlist --skip-download --write-subs --sub-langs live_chat --sub-format json -o "%(id)s.%(ext)s" "https://www.youtube.com/watch?v=hiYdiF8PnMI"
+```
+
+保存される `.live_chat.json` は、動画ファイルではなくチャットリプレイのテキストです。すべてのアーカイブにチャット履歴があるわけではありません。自分のPCからでも取得が拒否される場合は、別の方法が必要です。
+
+**自動追加の仕組み**
+
+- [登録済みチャット一覧](./archive-data/index.json)
+- [アーカイブ一覧再構築ワークフロー](./.github/workflows/rebuild-archive-index.yml)
+- [取得用Pythonスクリプト](./scripts/import_archive.py)
+
+YouTubeからの自動取得を1日1回行うスケジュールは、GitHub側のボット判定で失敗が続く可能性があるため、一旦停止しています。GitHubのURLからyt-dlpを実行する仕組みは残しています。
 
 ### ライブ配信について
 
