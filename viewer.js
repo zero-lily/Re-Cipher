@@ -174,7 +174,6 @@
   if(!id)return st('正しいYouTubeのURLまたは動画IDを入力してください。',true);
   const n=++state.loadSerial;
   state.messages=[];state.title='';state.lastEnd=-1;state.lastKey='';
-  $('export-chat').disabled=true;
   showVideo(id);render(true);
   try{
    const data=await requestJSON('./archive-data/'+id+'.json');
@@ -259,26 +258,8 @@
    if(!messages?.length)throw Error('チャットメッセージを読み取れませんでした');
    if(!state.id)throw Error('先にYouTubeの動画を選択してください');
    setMessages({videoId:state.id,title:state.title||'YouTubeアーカイブ',messages},'端末内ファイル');
-   $('export-chat').disabled=false;
   }catch(e){st(e.message,true);}
  }
- function exportArchiveFile(){
-  if(!state.id||!state.messages.length){st('先にチャットファイルを読み込んでください。',true);return;}
-  if(!/^[\w-]{11}$/.test(state.id)){st('動画IDが正しくありません。',true);return;}
-  const data={
-   format:'recipher-chat-v1',
-   videoId:state.id,title:state.title||('YouTubeアーカイブ '+state.id),
-   channel:'',source:'local viewer import',
-   updatedAt:new Date().toISOString(),messages:state.messages
-  };
-  const blob=new Blob([JSON.stringify(data)],{type:'application/json;charset=utf-8'});
-  const url=URL.createObjectURL(blob),anchor=document.createElement('a');
-  anchor.href=url;anchor.download=state.id+'.json';anchor.style.display='none';
-  document.body.append(anchor);anchor.click();anchor.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),60_000);
-  st('GitHub登録用JSONを保存しました。GitHubの archive-data/ にアップロードすると公開一覧へ追加されます。');
- }
- $('export-chat').addEventListener('click',exportArchiveFile);
  $('select-video').addEventListener('click',()=>openVideo($('video-select').value));
  $('open-url').addEventListener('click',()=>openVideo(videoId($('video-url').value)));
  $('video-url').addEventListener('keydown',e=>{if(e.key==='Enter')openVideo(videoId($('video-url').value));});
