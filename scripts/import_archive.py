@@ -108,10 +108,45 @@ def download_chat(video_id: str) -> dict:
             "--no-warnings", "--output", str(base), url,
         ]
         print("チャット取得:", url, flush=True)
-        completed = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
+        # Deno is installed on Actions, but runner IP reputation can still
+        # prevent access. Try one alternate, unauthenticated YouTube client
+        # before giving users a concrete fallback. Never collect account cookies.
+        profiles = [
+            ("標準", []),
+            ("代替クライアント", [
+                "--force-ipv4", "--extractor-args",
+                "youtube:player_client=tv,web_safari",
+            ]),
+        ]
+        failures = []
+        for label, options in profiles:
+            print("取得方式:", label, flush=True)
+            completed = subprocess.run(
+                cmd[:-1] + options + [url],
+                capture_output=True, text=True, timeout=1200,
+            )
+            if completed.returncode == 0:
+                break
+            failure = (completed.stderr or completed.stdout or "")[-1600:]
+            failures.append(label + ": " + failure)
+            if ("Sign in to confirm" not in failure
+                    and "not a bot" not in failure):
+                break
         if completed.returncode:
-            raise RuntimeError("yt-dlpでチャットを取得できませんでした: "
-                               + (completed.stderr or completed.stdout)[-1000:])
+            combined = "\n".join(failures)
+            if "Sign in to confirm" in combined or "not a bot" in combined:
+                raise RuntimeError(
+                    "YouTubeがこのGitHub Actions実行環境からのアクセスを拒否しました。"
+                    " Denoや取得クライアントを変えても解消しない場合があります。"
+                    " PCでyt-dlpからチャットを取得し、Re:Cipherビューアで"
+                    " GitHub登録用JSONに変換してアップロードしてください。"
+                    " YouTubeのログインCookieをGitHubへ登録しないでください。"
+                    "\n" + combined[-1200:]
+                )
+            raise RuntimeError(
+                "yt-dlpでチャットを取得できませんでした: "
+                + combined[-1200:]
+            )
         candidates = list(Path(work).glob("*.live_chat.json"))
         if not candidates:
             raise RuntimeError("この動画のチャットリプレイが見つかりません（無効・未公開・取得制限の可能性）。")
