@@ -86,7 +86,7 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
   <input id="video-url" class="link-input" type="url" inputmode="url" placeholder="YouTubeのURLを入力（または動画ID）" aria-label="YouTube動画のURL">
   <button id="open-url" class="btn" type="button">URLを開く</button>
  </div>
- <p class="help" style="margin:8px 0 0">取得済みの動画はすぐ復号できます。未取得の動画は、動画プレーヤーを開いた後でチャットファイルを追加できます。</p>
+ <p class="help" style="margin:8px 0 0">登録済みのアーカイブはチャットを復号できます。未登録の動画は再生のみ可能です。</p>
  <div id="status" class="status" role="status" aria-live="polite"></div>
 </section>
 <div class="layout">
@@ -101,13 +101,6 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
     <a id="youtube-link" href="https://www.youtube.com/channel/UCrXdSoIyfBmeKPsu0CggugQ/live" target="_blank" rel="noopener noreferrer" class="help live-link">YouTubeで開く</a>
    </div>
   </div>
-  <div class="panel">
-   <details id="import-details"><summary>手元のチャットファイルを読み込む</summary>
-    <p class="help"><strong>yt-dlp の .live_chat.json</strong>、または以前取得したCSVに対応しています。ファイルは端末内で処理され、サイトにアップロードされません。</p>
-    <input type="file" id="chat-file" accept=".json,.jsonl,.csv,application/json,text/csv" aria-label="チャットデータを読み込む">
-    <p class="help">取得方法（PC）：<code>yt-dlp --skip-download --write-subs --sub-langs live_chat --sub-format json "YouTubeのURL"</code></p>
-   </details>
-  </div>
  </div>
  <section class="panel chat-panel" aria-label="自動復号チャット">
   <div class="chat-head">
@@ -119,7 +112,6 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
    <label><input type="checkbox" id="hide-toggle">暗号投稿を非表示</label>
    <label><input type="checkbox" id="follow-toggle" checked>動画に追従</label>
   </div>
-  <details class="help" style="padding:7px 0"><summary>復号表示のサンプル（実際のチャットとは別）</summary><div id="demo-result" style="padding:9px 2px"></div></details>
   <div class="chat-list" id="chat-list" role="log" aria-live="off"><div class="empty">動画を選ぶとコメントが表示されます</div></div>
   <div class="meta" id="chat-footer">接頭辞「ネタバレ防止言語:」と旧「Re信号:」に対応します。</div>
  </section>
