@@ -106,7 +106,12 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
    <details id="import-details"><summary>手元のチャットファイルを読み込む</summary>
     <p class="help"><strong>yt-dlp の .live_chat.json</strong>、または以前取得したCSVに対応しています。ファイルは端末内で処理され、サイトにアップロードされません。</p>
     <input type="file" id="chat-file" accept=".json,.jsonl,.csv,application/json,text/csv" aria-label="チャットデータを読み込む">
-    <p class="help">取得方法（PC）：<code>yt-dlp --skip-download --write-subs --sub-langs live_chat "YouTubeのURL"</code></p>
+    <p class="help">取得方法（PC）：<code>yt-dlp --skip-download --write-subs --sub-langs live_chat --sub-format json "YouTubeのURL"</code></p>
+    <div class="hrow" style="margin-top:11px">
+      <button id="export-chat" type="button" class="btn soft" disabled>GitHub登録用JSONを保存</button>
+      <a class="help" href="https://github.com/zero-lily/Re-Cipher/upload/main/archive-data" target="_blank" rel="noopener noreferrer">保存したJSONをGitHubにアップロード</a>
+    </div>
+    <p class="help">GitHubにアップロードすると、そのチャットデータは一般公開されます。ファイル名は変更せずに <code>archive-data/</code> へ追加してください。登録後はサイトの一覧に自動追加されます。</p>
    </details>
   </div>
  </div>
