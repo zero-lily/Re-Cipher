@@ -8,6 +8,37 @@ YouTubeのコメントやライブチャットで使う非公式の換字ツー�
 
 文章の暗号化・復号・コピーができます。
 
+## YouTubeアーカイブ・チャットビューア（スマホ対応）
+
+**[アーカイブビューアを開く](https://zero-lily.github.io/Re-Cipher/viewer.html)**
+
+- YouTubeの動画を埋め込んで再生し、再生時刻に合わせてチャットを表示します。
+- 「自動復号」「暗号投稿を非表示」「動画に追従」を個別に切り替えられます。
+- 新しい接頭辞 \`ネタバレ防止言語:\` と旧接頭辞 \`Re信号:\` の両方を復号できます。
+- 初期データとして、以前取得した新宝島トーアの同時視聴アーカイブ [NbVDBdORxvE](https://zero-lily.github.io/Re-Cipher/viewer.html?v=NbVDBdORxvE) のチャット7,006件を公開しています。
+- 別のYouTube URLを入力して動画を開き、手元の \`.live_chat.json\`（yt-dlp）またはチャットCSVを読み込めます。ファイルの読み込み・復号は端末内で行います。
+
+### ほかのアーカイブをサイトの一覧に追加する
+
+リポジトリに書き込みできるユーザーは、[Import YouTube archived chat ワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml) の「Run workflow」から動画URLを指定できます。
+
+GitHub Actionsが \`yt-dlp\` で**チャットリプレイのみ**を取得し、\`archive-data/VIDEO_ID.json\` と \`archive-data/index.json\` を生成してコミットします。動画ファイルは保存しません。
+
+また、スケジュール実行では新宝島トーアの最新アーカイブを1日1回確認します。ただし、YouTubeによるアクセス制限・リプレイ未提供・配信者の設定などにより取得できない動画があります。**GitHub Pagesそのものでは、未取得の動画URLを貼っただけでyt-dlpを実行することはできません。**
+
+ローカルで実行する場合：
+
+```bash
+pip install 'yt-dlp[default]'
+python scripts/import_archive.py --video 'https://www.youtube.com/watch?v=VIDEO_ID'
+```
+
+### ライブ配信について
+
+配信中のチャットをリアルタイム取得・復号するには、公式YouTube Data APIと共有取得用サーバーなどの別途構成が必要です。**現在のビューアはアーカイブ専用**で、サイト内のライブチャット自動取得は未実装です。サイトから公式の新宝島トーアのライブ配信ページを開けます。
+
+取得済みチャットの再配信には第三者の投稿が含まれます。利用に際してはYouTubeの規約および投稿者の権利に留意してください。異議がある場合は当リポジトリのIssuesから連絡できます。
+
 ## Chrome拡張機能
 
 YouTube上で `ネタバレ防止言語:` を含むコメントやライブチャットを自動復号し、復号した文字を色付きで表示します。ポップアップから暗号化もでき、送信先・送信内容を再確認する送信機能も備えています。
