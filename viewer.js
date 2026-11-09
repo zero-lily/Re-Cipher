@@ -100,6 +100,19 @@
   info.append(author,body);el.append(time,info);return el;
  }
  function render(force=false){
+  const demo=$('demo-result');
+  if(demo){
+   demo.replaceChildren();
+   if($('hide-toggle').checked)demo.textContent='（暗号投稿を非表示にしています）';
+   else{
+    const original='ネタバレ防止言語:ト愛',p=document.createElement('span');
+    p.className='prefix';p.textContent='ネタバレ防止言語:';
+    const v=document.createElement('span');
+    v.className=$('decode-toggle').checked&&state.codec?'decoded':'cipher';
+    v.textContent=v.className==='decoded'?decode(original):'ト愛';
+    demo.append(p,document.createTextNode(' '),v);
+   }
+  }
   const t=getTime();
   const end=upperBound(state.messages,t);
   const key=Number($('decode-toggle').checked)+'-'+Number($('hide-toggle').checked)+'-'+Number($('follow-toggle').checked);
