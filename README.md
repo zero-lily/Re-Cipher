@@ -16,6 +16,7 @@ YouTubeのコメントやライブチャットで使う非公式の換字ツー�
 - 「自動復号」「暗号投稿を非表示」「動画に追従」を個別に切り替えられます。
 - 新しい接頭辞 `ネタバレ防止言語:` と旧接頭辞 `Re信号:` の両方を復号できます。
 - 初期データとして、以前取得した新宝島トーアの同時視聴アーカイブ [NbVDBdORxvE](https://zero-lily.github.io/Re-Cipher/viewer.html?v=NbVDBdORxvE) のチャット7,006件を公開しています。
+- 第22・23話同時視聴アーカイブの[チャット4,664件](https://zero-lily.github.io/Re-Cipher/viewer.html?v=hiYdiF8PnMI)も登録済みです。
 - 別のYouTube URLを入力して動画を開き、手元の `.live_chat.json`（yt-dlp）またはチャットCSVを読み込めます。ファイルの読み込み・復号は端末内で行います。
 
 ### ほかのアーカイブをサイトの一覧に追加する
@@ -28,9 +29,9 @@ YouTubeのコメントやライブチャットで使う非公式の換字ツー�
 
 1. WindowsのPowerShellで下記の2行を一度だけ実行し、yt-dlpとDenoをインストールします。
 2. PowerShellを一度閉じ、開き直してから動画URLを指定して取得します。
-3. [アーカイブビューア](https://zero-lily.github.io/Re-Cipher/viewer.html)で同じ動画URLを開き、取得した `.live_chat.json` ファイルを選びます。
-4. 「GitHub登録用JSONを保存」を押すと `動画ID.json` が生成されます。これは公開するチャット本文を含むファイルです。
-5. [GitHubの `archive-data/` へのアップロード](https://github.com/zero-lily/Re-Cipher/upload/main/archive-data)で保存したJSONを追加し、「Commit changes」を押します。自動ワークフローがアーカイブ一覧を更新します。一般公開されるため、ファイルの中身を確認してください。
+3. 管理者のPCでこのリポジトリをダウンロードし、下記の変換コマンドで `.live_chat.json` を `archive-data/動画ID.json` に変換します。
+4. [GitHubの `archive-data/` へのアップロード](https://github.com/zero-lily/Re-Cipher/upload/main/archive-data)から、ログイン済みの**リポジトリ書き込み権限を持つ管理者だけ**がJSONを追加し、「Commit changes」を押します。
+5. アーカイブ一覧はGitHub Actionsで自動更新されます。アップロードするJSONには投稿者名・チャット本文が含まれ、公開後は誰でも閲覧できます。
 
 インストール：
 
@@ -44,6 +45,14 @@ winget install --source winget --id DenoLand.Deno
 ```powershell
 yt-dlp --no-playlist --skip-download --write-subs --sub-langs live_chat --sub-format json -o "%(id)s.%(ext)s" "https://www.youtube.com/watch?v=hiYdiF8PnMI"
 ```
+
+取得したファイルの変換（リポジトリをダウンロード・展開したフォルダで実行）：
+
+```powershell
+python scripts/convert_local_chat.py --file "ダウンロードしたファイル.live_chat.json" --video "hiYdiF8PnMI" --title "配信のタイトル"
+```
+
+**一般視聴者向けのサイトには、アップロード・公開ボタンを置いていません。** GitHubの公開リポジトリは誰でも閲覧できますが、`main` に直接登録できるのは書き込み権限がある管理者・共同編集者だけです。一般利用者はサイト上で手元のチャットを読み込めますが、共有データとして公開はできません。
 
 保存される `.live_chat.json` は、動画ファイルではなくチャットリプレイのテキストです。すべてのアーカイブにチャット履歴があるわけではありません。自分のPCからでも取得が拒否される場合は、別の方法が必要です。
 
