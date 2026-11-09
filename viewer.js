@@ -146,6 +146,7 @@
  window.onYouTubeIframeAPIReady=()=>{ytLoaded=true;if(state.id)ytReady();};
  function showVideo(id){
   state.id=id;state.playerReady=false;
+  $('seek').value=0;$('seek').disabled=true;$('position').textContent='00:00';$('duration').textContent='再生時刻に自動追従';
   $('video-title').textContent='動画を読み込み中…';
   $('youtube-link').href='https://www.youtube.com/watch?v='+id;
   const url=new URL(location.href);url.searchParams.set('v',id);history.replaceState(null,'',url);
