@@ -1,121 +1,125 @@
-# Re:Cipher — リゼロ風 暗号化・復号ツール
+# Re:Cipher — ネタバレ防止言語
 
-YouTubeのコメントやライブチャットで使う非公式の換字ツールです。文章を `ネタバレ防止言語:` から始まる文字列に変換できます。見たい人だけが元の文章に復号できます。
+YouTubeの動画コメント・ライブチャットで、うっかりネタバレを目にしないための非公式ツールです。文章を `ネタバレ防止言語:` から始まる文字列へ変換し、見たい人だけ復号できます。
 
-## ブラウザ版（インストール不要）
+## 使い方
 
-**[Re:Cipherを開く](https://zero-lily.github.io/Re-Cipher/)**
+### 1. 暗号化・復号サイト（スマホ対応）
 
-文章の暗号化・復号・コピーができます。
+**[Re:Cipherの暗号化・復号サイトを開く](https://zero-lily.github.io/Re-Cipher/)**
 
-## YouTubeアーカイブ・チャットビューア（スマホ対応）
+文章を入力して暗号化し、YouTubeのコメントやライブチャットへコピーできます。受け取った暗号文の復号にも利用できます。
+
+### 2. アーカイブ視聴・チャットビューア（スマホ対応）
 
 **[アーカイブビューアを開く](https://zero-lily.github.io/Re-Cipher/viewer.html)**
 
-- YouTubeの動画を埋め込んで再生し、再生時刻に合わせてチャットを表示します。
-- 「自動復号」「暗号投稿を非表示」「動画に追従」を個別に切り替えられます。
-- 新しい接頭辞 `ネタバレ防止言語:` と旧接頭辞 `Re信号:` の両方を復号できます。
-- 初期データとして、以前取得した新宝島トーアの同時視聴アーカイブ [NbVDBdORxvE](https://zero-lily.github.io/Re-Cipher/viewer.html?v=NbVDBdORxvE) のチャット7,006件を公開しています。
-- 第22・23話同時視聴アーカイブの[チャット4,664件](https://zero-lily.github.io/Re-Cipher/viewer.html?v=hiYdiF8PnMI)も登録済みです。
-- 別のYouTube URLを入力して動画を開き、手元の `.live_chat.json`（yt-dlp）またはチャットCSVを読み込めます。ファイルの読み込み・復号は端末内で行います。
+登録済みの動画を選ぶと、YouTubeの動画とチャットを同時に表示します。チャットは動画の再生位置と連動します。
 
-### ほかのアーカイブをサイトの一覧に追加する
+表示設定は次の3種類です。
 
-**GitHub Actionsでの直接取得（簡単ですが、YouTubeから拒否されることがあります）**
+- **自動復号**：暗号投稿の接頭辞を残し、復号した本文を色付きで表示。
+- **暗号投稿を非表示**：暗号投稿全体を隠す。
+- **動画に追従**：再生位置に合わせて最新のチャットを表示。
 
-リポジトリの管理者は、[Import YouTube archived chat ワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml) の「Run workflow」で動画URLを指定できます。Denoを追加し、yt-dlpの代替取得方式も試しますが、**GitHub Actions実行環境のIPがYouTubeにブロックされる場合は成功を保証できません**。YouTubeのCookieをGitHubへ登録しないでください。
+現在視聴できるアーカイブ：
 
-**GitHub ActionsがYouTubeに拒否されたとき（Windows PCから取得・アップロード）**
+- [第16〜18話・同時視聴（7,006件）](https://zero-lily.github.io/Re-Cipher/viewer.html?v=NbVDBdORxvE)
+- [第22・23話・同時視聴（4,664件）](https://zero-lily.github.io/Re-Cipher/viewer.html?v=hiYdiF8PnMI)
 
-1. WindowsのPowerShellで下記の2行を一度だけ実行し、yt-dlpとDenoをインストールします。
-2. PowerShellを一度閉じ、開き直してから動画URLを指定して取得します。
-3. 管理者のPCでこのリポジトリをダウンロードし、下記の変換コマンドで `.live_chat.json` を `archive-data/動画ID.json` に変換します。
-4. [GitHubの `archive-data/` へのアップロード](https://github.com/zero-lily/Re-Cipher/upload/main/archive-data)から、ログイン済みの**リポジトリ書き込み権限を持つ管理者だけ**がJSONを追加し、「Commit changes」を押します。
-5. アーカイブ一覧はGitHub Actionsで自動更新されます。アップロードするJSONには投稿者名・チャット本文が含まれ、公開後は誰でも閲覧できます。
+YouTubeのURLを入力することもできますが、**未登録の動画は動画再生のみ**となり、チャットの復号・非表示には対応しません。チャット登録は管理者が行うため、一般向けビューアにファイルのアップロード機能はありません。
 
-インストール：
+配信中のチャット自動取得は現在未対応です。アーカイブ再生専用の機能です。
+
+### 3. Chrome拡張機能（PC向け）
+
+**[最新版のChrome拡張機能をダウンロード](https://github.com/zero-lily/Re-Cipher/releases/latest)**
+
+Chrome拡張では、通常のYouTube画面のコメント・ライブチャットで暗号投稿を色付きで復号できます。また、暗号化、手動復号、投稿の非表示、送信先を確認してからの投稿に対応しています。
+
+#### インストール方法（Windows・Chrome）
+
+1. リリースページの「Assets」から **`Re-Cipher-Chrome-v*.zip`** をダウンロードします。**`Source code (zip)` はインストール用ではありません。**
+2. ZIPを右クリックし、「すべて展開」を選択します。
+3. Chromeで `chrome://extensions` を開き、デベロッパーモードをオンにします。
+4. 「パッケージ化されていない拡張機能を読み込む」から、展開したフォルダ（`manifest.json` が直接ある場所）を選びます。
+5. YouTubeのページを再読み込みします。
+
+バージョン更新時は最新版ZIPを展開し、読み込んでいる拡張機能フォルダの中身を更新してから `chrome://extensions` で再読み込みしてください。GitHub配布版は自動更新されません。
+
+### 対応する接頭辞
+
+新規の暗号文は `ネタバレ防止言語:` を使います。旧 `Re信号:` の投稿も引き続き復号できます。
+
+## ご利用上の注意
+
+- この仕組みは**難読化**です。暗号学的な秘匿性はなく、変換サイトを使えば誰でも復号できます。
+- Re:Zeroの権利者およびYouTubeとは関係のない、非公式ファンツールです。
+- アーカイブビューアには、配信中に公開されていた投稿者名とチャット本文のデータを使用します。取得可能なアーカイブやチャットは変動します。
+- コメントや動画の取り扱いでは、YouTubeの利用条件や投稿者の権利にご配慮ください。お問い合わせは[GitHub Issues](https://github.com/zero-lily/Re-Cipher/issues)までお願いします。
+
+---
+
+## 管理者向けメモ（サイト利用者はここを読む必要はありません）
+
+以下はリポジトリの管理、配布、チャット取得のための運用記録です。**公開サイトからのチャットアップロードは設けず、GitHubで書き込み権限を持つ管理者だけが `main` に直接登録します。**
+
+### リポジトリの構成
+
+| ファイル・ディレクトリ | 用途 |
+|---|---|
+| `index.html` | 暗号化・復号のWebサイト |
+| `viewer.html`, `viewer.js` | アーカイブ再生・チャット復号ビューア |
+| `archive-data/index.json` | 公開アーカイブの一覧 |
+| `archive-data/<videoId>.json` | 動画ごとの公開チャットデータ |
+| `codec-v3.json` | 現行の復号辞書 |
+| `chrome-extension/` | Chrome拡張機能のソース |
+| `scripts/import_archive.py` | yt-dlpでの取得と登録 |
+| `scripts/convert_local_chat.py` | ローカルで取得済みのチャットをJSONへ変換 |
+| `scripts/rebuild_archive_index.py` | 一覧の再生成 |
+
+### アーカイブチャットの追加方法
+
+**A. GitHub Actionsから取得（失敗することがあります）**
+
+[Import YouTube archived chat (yt-dlp)](https://github.com/zero-lily/Re-Cipher/actions/workflows/archive-import.yml) で「Run workflow」を選び、動画URLを入力します。
+
+GitHub ActionsのホストIPはYouTubeからボット判定で拒否されることがあり、Denoや取得方式を変えても成功する保証はありません。このため、毎日の自動取得は一時停止しています。**YouTubeアカウントのCookieをGitHub Secretsやリポジトリに登録しないでください。**
+
+**B. PCで取得して、管理者がGitHubに登録（推奨）**
+
+Windowsの場合、必要に応じてyt-dlpとDenoをインストールします。登録用変換にはPythonも必要です。
 
 ```powershell
-winget install --source winget --id yt-dlp.yt-dlp
-winget install --source winget --id DenoLand.Deno
+winget install --id yt-dlp.yt-dlp
+winget install --id DenoLand.Deno
 ```
 
-チャットのみ取得（例：今回失敗した動画）：
+PowerShellを開き直してチャットリプレイだけを取得します。
 
 ```powershell
-yt-dlp --no-playlist --skip-download --write-subs --sub-langs live_chat --sub-format json -o "%(id)s.%(ext)s" "https://www.youtube.com/watch?v=hiYdiF8PnMI"
+yt-dlp --no-playlist --skip-download --write-subs --sub-langs live_chat --sub-format json "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
-取得したファイルの変換（リポジトリをダウンロード・展開したフォルダで実行）：
+リポジトリの作業フォルダで、取得済みファイルを公開形式に変換します。
 
 ```powershell
-python scripts/convert_local_chat.py --file "ダウンロードしたファイル.live_chat.json" --video "hiYdiF8PnMI" --title "配信のタイトル"
+python scripts/convert_local_chat.py --file "取得ファイル.live_chat.json" --video "VIDEO_ID" --title "配信タイトル"
 ```
 
-**一般視聴者向けのサイトには、アップロード・公開ボタンを置いていません。** GitHubの公開リポジトリは誰でも閲覧できますが、`main` に直接登録できるのは書き込み権限がある管理者・共同編集者だけです。一般利用者はサイト上で手元のチャットを読み込めますが、共有データとして公開はできません。
+このスクリプトは `archive-data/VIDEO_ID.json` を生成し、既存の同名ファイルを上書きしません。生成したJSONには**投稿者名・チャット本文が含まれ、公開リポジトリに登録すると誰でも閲覧できます**。内容を確認してから、[archive-dataへのアップロード画面](https://github.com/zero-lily/Re-Cipher/upload/main/archive-data)でコミットしてください。
 
-保存される `.live_chat.json` は、動画ファイルではなくチャットリプレイのテキストです。すべてのアーカイブにチャット履歴があるわけではありません。自分のPCからでも取得が拒否される場合は、別の方法が必要です。
+`archive-data/*.json` の追加時は [一覧更新ワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/rebuild-archive-index.yml) が `index.json` を再生成します。ワークフローが失敗したときは `python scripts/rebuild_archive_index.py` を実行し、その変更もコミットします。ワークフローの実行にはGitHub Actionsの書き込み権限が必要です。
 
-**自動追加の仕組み**
+### Chrome拡張のリリース
 
-- [登録済みチャット一覧](./archive-data/index.json)
-- [アーカイブ一覧再構築ワークフロー](./.github/workflows/rebuild-archive-index.yml)
-- [取得用Pythonスクリプト](./scripts/import_archive.py)
+Chrome拡張の配布用ZIPは、リポジトリ全体のZIPではなく `chrome-extension/` の内容だけを含みます。拡張機能の `manifest.json` のバージョンを更新して `main` に反映すると、[Chrome拡張のReleaseワークフロー](https://github.com/zero-lily/Re-Cipher/actions/workflows/chrome-extension-release.yml) がZIPを生成してReleasesへ添付します。
 
-YouTubeからの自動取得を1日1回行うスケジュールは、GitHub側のボット判定で失敗が続く可能性があるため、一旦停止しています。GitHubのURLからyt-dlpを実行する仕組みは残しています。
+辞書は `codec-v3.json` から取得します。辞書の登録語句を増やす場合も、**既存符号の意味は変えず、古い暗号の復号互換性を保ってください**。アルゴリズム自体の変更は拡張機能の更新が必要です。
 
-### ライブ配信について
+### 現在の運用制約
 
-配信中のチャットをリアルタイム取得・復号するには、公式YouTube Data APIと共有取得用サーバーなどの別途構成が必要です。**現在のビューアはアーカイブ専用**で、サイト内のライブチャット自動取得は未実装です。サイトから公式の新宝島トーアのライブ配信ページを開けます。
-
-取得済みチャットの再配信には第三者の投稿が含まれます。利用に際してはYouTubeの規約および投稿者の権利に留意してください。異議がある場合は当リポジトリのIssuesから連絡できます。
-
-## Chrome拡張機能
-
-YouTube上で `ネタバレ防止言語:` を含むコメントやライブチャットを自動復号し、復号した文字を色付きで表示します。ポップアップから暗号化もでき、送信先・送信内容を再確認する送信機能も備えています。
-
-**[最新版の拡張機能をダウンロード（GitHub Releases）](https://github.com/zero-lily/Re-Cipher/releases/latest)**
-
-Releasesの「Assets」にある **`Re-Cipher-Chrome-v*.zip`**（最新版は v1.1.6）をダウンロードしてください。
-
-> **注意：** GitHubが自動表示する **`Source code (zip)`** はWebサイト等を含むリポジトリ全体のソースです。Chrome拡張のインストールには **`Re-Cipher-Chrome-v*.zip`** を使用してください。
-
-### インストール方法（Windows・Chrome）
-
-1. ダウンロードしたZIPを右クリックして「すべて展開」します。
-2. Chromeのアドレス欄に `chrome://extensions` と入力します。
-3. 右上の「デベロッパーモード」をオンにします。
-4. 「パッケージ化されていない拡張機能を読み込む」を押します。
-5. ZIPを展開したフォルダ（`manifest.json` が直接入っている場所）を指定します。
-6. YouTubeのページを再読み込みし、拡張機能のアイコンから「自動復号」をオンにします。
-
-
-### 更新について
-
-新しい拡張機能がリリースされた場合は、新版ZIPをダウンロード・展開してChrome側で拡張機能を読み込み直してください。デベロッパーモードでインストールした拡張機能は、GitHub Releasesから自動更新されません。
-
-復号辞書は [codec-v3.json](./codec-v3.json) を参照して更新できます。辞書の変更と拡張機能本体の更新は別です。
-
-### 拡張機能でできること
-
-- **自動復号**：新規インストール時はオン。YouTubeの `ネタバレ防止言語:` を復号し、接頭辞は紫、復号本文は緑で表示します。
-- **投稿の非表示**：独立したスイッチで `ネタバレ防止言語:` のコメント・チャット全体を非表示にできます。
-- **復号オフ時の色分け**：`ネタバレ防止言語:` は紫、未復号の暗号本文はオレンジで表示します。
-- **手動の暗号化・復号**：拡張機能のポップアップ内でどちらも利用できます。
-- **暗号化して送信**：送信先と内容を確認する二段階方式です。既存の下書きは上書きしません。
-
-旧接頭辞の `Re信号:` で投稿した暗号文も、引き続き復号できます。新規投稿には `ネタバレ防止言語:` を使用します。
-
-## 開発者向け
-
-- [Chrome拡張機能のソース](./chrome-extension/)
-- [最新リリース](https://github.com/zero-lily/Re-Cipher/releases/latest)
-- [辞書データ](./codec-v3.json)
-
-拡張機能のZIPには `chrome-extension/` 以下のファイルだけを入れます。リポジトリ全体を含めません。バージョンを更新して `main` に反映する際は、GitHub ActionsがZIPの作成とReleaseへの添付を行います。
-
-## 注意事項
-
-これは偶然ネタバレを見てしまうことを避けるための**難読化**です。暗号学的な秘匿性はなく、変換サイトを使えば誰でも復号できます。Re:Zeroの権利者とは関係のない非公式ファンツールです。
-
-ブラウザ内で暗号化・復号し、コメント本文を変換サーバーへ送信しません。
+- アーカイブは登録済みJSONをGitHub Pagesから配信します。URLを貼るだけで新規動画のチャットを取得する仕組みはありません。
+- GitHub ActionsによるYouTubeへの直接アクセスは制限されることがあります。ローカル取得を優先します。
+- 配信中のリアルタイムチャット連携は未実装です。実現にはAPI・共有取得サーバー等が必要です。
+- 公開チャットデータの保存・再配信と利用条件については、運用前に継続確認してください。
