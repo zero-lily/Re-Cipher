@@ -3,8 +3,9 @@
  const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
  const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const $=id=>document.getElementById(id);
- const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded')};
+ const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),before:$('plain-before'),after:$('plain-after'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded')};
  let dict=null,trie=null,encrypted='',currentPlain='',pending=null,decodedText='';
+ const DRAFT_KEY='reCipherDraftV117';
  const symbolLen=s=>Array.from(s).length;
  const note=(s,error=false)=>{ui.notice.textContent=s;ui.notice.className='notice '+(error?'error':'success');};
  // All send status and final confirmation are located immediately below the title.
@@ -73,6 +74,35 @@
    }
    return result;
  }
+ // Drafts stay on this computer (not synced to other devices).
+ function draftSnapshot(){
+   return {plain:ui.plain.value,before:ui.before.value,after:ui.after.value,decode:ui.decodeInput.value};
+ }
+ function saveDraft(){
+   chrome.storage.local.set({[DRAFT_KEY]:draftSnapshot()}).catch(()=>{});
+ }
+ async function restoreDraft(){
+   try{
+     const saved=(await chrome.storage.local.get(DRAFT_KEY))[DRAFT_KEY];
+     if(!saved||typeof saved!=='object')return;
+     for(const [field,key] of [[ui.plain,'plain'],[ui.before,'before'],[ui.after,'after'],[ui.decodeInput,'decode']]){
+       if(!field.value&&typeof saved[key]==='string')field.value=saved[key].slice(0,20000);
+     }
+     if(ui.before.value||ui.after.value)$('mix-options').open=true;
+     render();renderDecode();
+   }catch{ /* Failing to restore a draft must not block encoding. */ }
+ }
+ function decodeMixed(raw){
+   const parts=globalThis.ReCipherMixed.split(raw);
+   const signals=parts.filter(part=>part.kind==='signal');
+   if(!signals.length)throw Error('ネタバレ防止言語: が見つかりません');
+   const onlySignal=parts.length===1&&signals.length===1;
+   return parts.map(part=>{
+     if(part.kind==='plain')return part.text;
+     if(!part.payload)throw Error('暗号文が空です');
+     return (onlySignal?'':part.prefix)+decode(part.prefix+part.payload);
+   }).join('');
+ }
  function renderDecode(){
    const raw=ui.decodeInput.value.trim();
    decodedText='';ui.copyDecoded.disabled=true;ui.decodedCount.textContent='0文字';
@@ -83,7 +113,7 @@
      return;
    }
    try{
-     decodedText=decode(raw);
+     decodedText=decodeMixed(raw);
      ui.decodedResult.textContent=decodedText;
      ui.decodedCount.textContent=symbolLen(decodedText)+'文字';
      ui.copyDecoded.disabled=false;
@@ -95,11 +125,25 @@
    }
  }
  function render(){
-   const plain=ui.plain.value;ui.count.textContent=symbolLen(plain)+'文字';
-   if(plain!==currentPlain){pending=null;ui.confirm.classList.add('hidden');}
-   currentPlain=plain;
-   try{encrypted=plain?encode(plain):'';ui.cipher.textContent=encrypted||'暗号化するとここに表示されます';ui.cipherCount.textContent=symbolLen(encrypted)+'文字';}
-   catch(e){encrypted='';ui.cipher.textContent=e.message;ui.cipherCount.textContent='—';}
+   const plain=ui.plain.value;
+   ui.count.textContent=symbolLen(plain)+'文字';
+   const signature=JSON.stringify([plain,ui.before.value,ui.after.value]);
+   if(signature!==currentPlain){
+     pending=null;
+     ui.confirm.classList.add('hidden');
+   }
+   currentPlain=signature;
+   try{
+     const encoded=plain?encode(plain):'';
+     const before=ui.before.value.trim(),after=ui.after.value.trim();
+     encrypted=encoded?[before,encoded,after?'【平文】\n'+after:''].filter(Boolean).join('\n\n'):'';
+     ui.cipher.textContent=encrypted||'暗号化するとここに表示されます';
+     ui.cipherCount.textContent=symbolLen(encrypted)+'文字';
+   }catch(e){
+     encrypted='';
+     ui.cipher.textContent=e.message;
+     ui.cipherCount.textContent='—';
+   }
    ui.copy.disabled=ui.send.disabled=!encrypted;
  }
  async function loadDictionary(){
@@ -119,24 +163,29 @@
    try{const r=await chrome.runtime.sendMessage({type:'FORCE_SYNC'});if(!r?.ok)throw Error(r?.error||'更新失敗');dict=r.codec;trie=makeTrie(dict);render();renderDecode();note('辞書を更新・確認しました');}
    catch(e){note(e.message,true);}finally{ui.update.disabled=false;showStatus();}
  });
- ui.decodeInput.addEventListener('input',renderDecode);
- $('clear-decode').addEventListener('click',()=>{ui.decodeInput.value='';renderDecode();ui.decodeInput.focus();});
+ ui.decodeInput.addEventListener('input',()=>{renderDecode();saveDraft();});
+ $('clear-decode').addEventListener('click',()=>{ui.decodeInput.value='';renderDecode();saveDraft();ui.decodeInput.focus();});
  $('insert-prefix').addEventListener('click',()=>{
-   if(!prefixOf(ui.decodeInput.value.trimStart())){
+   let parts=globalThis.ReCipherMixed.split(ui.decodeInput.value);
+   let signal=parts.find(part=>part.kind==='signal');
+   if(!signal){
      ui.decodeInput.value=PREFIX+ui.decodeInput.value;
-     renderDecode();
+     renderDecode();saveDraft();
+     parts=globalThis.ReCipherMixed.split(ui.decodeInput.value);
+     signal=parts.find(part=>part.kind==='signal');
    }
    ui.decodeInput.focus();
-   const start=prefixOf(ui.decodeInput.value.trimStart())||PREFIX;
-   ui.decodeInput.setSelectionRange(start.length,start.length);
+   const start=ui.decodeInput.value.indexOf(signal.prefix)+signal.prefix.length;
+   ui.decodeInput.setSelectionRange(start,start);
  });
  ui.copyDecoded.addEventListener('click',async()=>{
    if(!decodedText)return;
    try{await navigator.clipboard.writeText(decodedText);note('復号文をコピーしました');}
    catch{note('復号文をコピーできませんでした',true);}
  });
- ui.plain.addEventListener('input',render);$('encrypt').addEventListener('click',()=>{render();note(encrypted?'変換しました。内容を確認してください':'入力欄に文章を入力してください',!encrypted);});
- $('clear').addEventListener('click',()=>{ui.plain.value='';render();note('');});
+ for(const field of [ui.plain,ui.before,ui.after])field.addEventListener('input',()=>{render();saveDraft();});
+ $('encrypt').addEventListener('click',()=>{render();note(encrypted?'変換しました。内容を確認してください':'入力欄に文章を入力してください',!encrypted);});
+ $('clear').addEventListener('click',()=>{ui.plain.value='';ui.before.value='';ui.after.value='';render();saveDraft();note('');});
  ui.copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(encrypted);note('暗号文をコピーしました');}catch{note('コピーできませんでした。結果欄から手動コピーしてください',true);}});
  // Discover only YouTube frames, not unrelated advertising iframes.
  // Each frame uses the same target detection as the final send handler.
@@ -225,5 +274,7 @@
      ui.confirm.classList.add('hidden');pending=null;scrollToConfirmation();
    }catch(e){note(e.message,true);updateConfirmation();scrollToConfirmation();}
  });
+ restoreDraft();
+ window.addEventListener('pagehide',saveDraft);
  loadDictionary().catch(e=>{note(e.message,true);showStatus();});
 })();
