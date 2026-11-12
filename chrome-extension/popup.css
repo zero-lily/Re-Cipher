@@ -7,3 +7,10 @@
 .confirm h2{font-size:16px;color:#6043a0}
 .confirm .row .danger{font-weight:800}
 .notice:empty{display:none}
+
+/* Optional plain text mixed into cipher posts. Collapsed by default to save room. */
+.mix-options{margin-top:8px;padding:8px 9px;border:1px solid #e4dcf2;border-radius:9px;background:#fcfbff}
+.mix-options summary{cursor:pointer;font-size:11.5px;font-weight:750;color:#664d9c}
+.mix-options label{display:block;margin:11px 0 4px;font-size:11px;color:#695c81;font-weight:700}
+.mix-options textarea{min-height:57px}
+.mix-options .small-note{margin-top:5px}
