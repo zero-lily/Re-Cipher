@@ -3,7 +3,6 @@
  if(globalThis.__reCipherContentLoaded)return;
  globalThis.__reCipherContentLoaded=true;
  const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
- const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const MSG='GET_CODEC';
  const SELECTORS=[
   'ytd-comment-view-model #content-text',
@@ -66,44 +65,60 @@
   rendered.delete(el);
  }
  function handle(el){
-  if(!el.isConnected || el.closest('.re-cipher-output'))return;
-  // Avoid treating parent and nested child as two independent comments.
+  if(!el.isConnected||el.closest('.re-cipher-output'))return;
+  // Avoid treating parent and nested child as independent comments.
   if(el.querySelector(SELECTORS))return;
-  const t=sourceText(el);
-  const currentPrefix=prefixOf(t);
-  if(!currentPrefix){
-   if(rendered.has(el))restore(el);
-   return;
+  const t=sourceText(el),parts=globalThis.ReCipherMixed.split(t);
+  if(!parts.some(part=>part.kind==='signal')){
+    if(rendered.has(el))restore(el);
+    return;
   }
   const container=el.closest(POST_SELECTOR);
   const wantHidden=hideSignals&&!!container;
-  const mode=wantHidden?'hidden':enabled&&dict&&t.length>currentPrefix.length?'decoded':'encoded';
+  const requestedMode=wantHidden?'hidden':enabled&&dict?'decoded':'encoded';
   const previous=rendered.get(el);
-  if(previous?.text===t&&previous.mode===mode&&previous.container===container&&
-    (mode==='hidden'?container?.classList.contains('re-cipher-item-hidden'):el.nextElementSibling?.classList.contains('re-cipher-output')))return;
+  // Compare requested (not actual) mode: malformed signals must not redraw
+  // repeatedly when MutationObserver sees our own inserted output.
+  if(previous?.text===t&&previous.requestedMode===requestedMode&&previous.container===container&&
+     (requestedMode==='hidden'?container?.classList.contains('re-cipher-item-hidden'):el.nextElementSibling?.classList.contains('re-cipher-output')))return;
   if(previous)restore(el);
   if(wantHidden){
-   container.classList.add('re-cipher-item-hidden');
-   rendered.set(el,{text:t,mode,container});
-   return;
-  }
-  let body=t.slice(currentPrefix.length);
-  let decoded=false;
-  if(enabled&&dict&&body){
-   try{body=decode(t);decoded=true;}
-   catch{
-    if(Date.now()-lastIssueTime>60_000){lastIssueTime=Date.now();chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});}
-   }
+    container.classList.add('re-cipher-item-hidden');
+    rendered.set(el,{text:t,requestedMode,container});
+    return;
   }
   const span=document.createElement('span');
-  span.className='re-cipher-output';span.setAttribute('data-re-cipher-generated','yes');
-  const prefix=document.createElement('span');prefix.className='re-cipher-prefix';prefix.textContent=currentPrefix;
-  const text=document.createElement('span');text.className=decoded?'re-cipher-decoded':'re-cipher-encoded';text.textContent=body;
-  span.append(prefix,text);
+  span.className='re-cipher-output';
+  span.setAttribute('data-re-cipher-generated','yes');
+  for(const part of parts){
+    if(part.kind==='plain'){
+      span.append(document.createTextNode(part.text));
+      continue;
+    }
+    const prefix=document.createElement('span');
+    prefix.className='re-cipher-prefix';
+    prefix.textContent=part.prefix;
+    span.append(prefix);
+    let body=part.payload,decoded=false;
+    if(enabled&&dict&&body){
+      try{body=decode(part.prefix+body);decoded=true;}
+      catch{
+        if(Date.now()-lastIssueTime>60_000){
+          lastIssueTime=Date.now();
+          chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});
+        }
+      }
+    }
+    const text=document.createElement('span');
+    text.className=decoded?'re-cipher-decoded':'re-cipher-encoded';
+    text.textContent=body;
+    span.append(text);
+  }
   el.classList.add('re-cipher-original-hidden');
   el.insertAdjacentElement('afterend',span);
-  el.dataset.reCipher='yes';el.setAttribute('data-re-cipher-source',t);
-  rendered.set(el,{text:t,mode:decoded?'decoded':'encoded',container});
+  el.dataset.reCipher='yes';
+  el.setAttribute('data-re-cipher-source',t);
+  rendered.set(el,{text:t,requestedMode,container});
  }
  function scan(){
   scheduled=false;
