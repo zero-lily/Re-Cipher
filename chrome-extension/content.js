@@ -3,6 +3,7 @@
  if(globalThis.__reCipherContentLoaded)return;
  globalThis.__reCipherContentLoaded=true;
  const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
+ const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const MSG='GET_CODEC';
  const SELECTORS=[
   'ytd-comment-view-model #content-text',
@@ -49,82 +50,118 @@
   }
   return out;
  }
- // Keep YouTube's original message node. Visual changes are always reversible.
+ // Never remove YouTube's original nodes. They own the native "詳細" control.
  function sourceText(el){
-  const clone=el.cloneNode(true);
-  clone.querySelectorAll('.re-cipher-output').forEach(node=>node.remove());
-  return (clone.textContent||'').trim();
+   const clone=el.cloneNode(true);
+   clone.querySelectorAll('.re-cipher-output,#more,#less,button,[role="button"]').forEach(node=>node.remove());
+   return (clone.textContent||'').trim();
  }
  function restore(el){
-  const prev=rendered.get(el);
-  if(prev?.container)prev.container.classList.remove('re-cipher-item-hidden');
-  el.classList.remove('re-cipher-original-hidden');
-  if(el.nextElementSibling?.classList.contains('re-cipher-output'))el.nextElementSibling.remove();
-  delete el.dataset.reCipher;
-  el.removeAttribute('data-re-cipher-source');
-  rendered.delete(el);
+   const prev=rendered.get(el);
+   if(prev?.container)prev.container.classList.remove('re-cipher-item-hidden');
+   el.classList.remove('re-cipher-original-hidden');
+   prev?.output?.remove();
+   delete el.dataset.reCipher;
+   el.removeAttribute('data-re-cipher-source');
+   rendered.delete(el);
  }
  function handle(el){
-  if(!el.isConnected||el.closest('.re-cipher-output'))return;
-  // Avoid treating parent and nested child as independent comments.
-  if(el.querySelector(SELECTORS))return;
-  const t=sourceText(el),parts=globalThis.ReCipherMixed.split(t);
-  if(!parts.some(part=>part.kind==='signal')){
-    if(rendered.has(el))restore(el);
-    return;
-  }
-  const container=el.closest(POST_SELECTOR);
-  const wantHidden=hideSignals&&!!container;
-  const requestedMode=wantHidden?'hidden':enabled&&dict?'decoded':'encoded';
-  const previous=rendered.get(el);
-  // Compare requested (not actual) mode: malformed signals must not redraw
-  // repeatedly when MutationObserver sees our own inserted output.
-  if(previous?.text===t&&previous.requestedMode===requestedMode&&previous.container===container&&
-     (requestedMode==='hidden'?container?.classList.contains('re-cipher-item-hidden'):el.nextElementSibling?.classList.contains('re-cipher-output')))return;
-  if(previous)restore(el);
-  if(wantHidden){
-    container.classList.add('re-cipher-item-hidden');
-    rendered.set(el,{text:t,requestedMode,container});
-    return;
-  }
-  const span=document.createElement('span');
-  span.className='re-cipher-output';
-  span.setAttribute('data-re-cipher-generated','yes');
-  for(const part of parts){
-    if(part.kind==='plain'){
-      span.append(document.createTextNode(part.text));
-      continue;
-    }
-    const prefix=document.createElement('span');
-    prefix.className='re-cipher-prefix';
-    prefix.textContent=part.prefix;
-    span.append(prefix);
-    let body=part.payload,decoded=false;
-    if(enabled&&dict&&body){
-      try{body=decode(part.prefix+body);decoded=true;}
-      catch{
-        if(Date.now()-lastIssueTime>60_000){
-          lastIssueTime=Date.now();
-          chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});
-        }
-      }
-    }
-    const text=document.createElement('span');
-    text.className=decoded?'re-cipher-decoded':'re-cipher-encoded';
-    text.textContent=body;
-    span.append(text);
-  }
-  el.classList.add('re-cipher-original-hidden');
-  el.insertAdjacentElement('afterend',span);
-  el.dataset.reCipher='yes';
-  el.setAttribute('data-re-cipher-source',t);
-  rendered.set(el,{text:t,requestedMode,container});
+   if(!el.isConnected||el.closest('.re-cipher-output'))return;
+   if(el.querySelector(SELECTORS))return;
+   const t=sourceText(el),parts=globalThis.ReCipherMixed.split(t);
+   if(!parts.some(part=>part.kind==='signal')){
+     if(rendered.has(el))restore(el);
+     return;
+   }
+   const container=el.closest(POST_SELECTOR);
+   const isComment=!!container&&container.tagName.startsWith('YTD-');
+   const preserveOriginal=isComment&&(t.length>180||!!container.querySelector('#more,#less'));
+   const wantHidden=hideSignals&&!!container;
+   const requestedMode=wantHidden?'hidden':enabled&&dict?'decoded':'encoded';
+   const previous=rendered.get(el);
+   if(previous?.text===t&&previous.requestedMode===requestedMode&&
+      previous.container===container&&previous.preserveOriginal===preserveOriginal&&
+      (requestedMode==='hidden'
+       ? container?.classList.contains('re-cipher-item-hidden')
+       : previous.failed||previous.output?.isConnected))return;
+   if(previous)restore(el);
+   if(wantHidden){
+     container.classList.add('re-cipher-item-hidden');
+     rendered.set(el,{text:t,requestedMode,container,preserveOriginal});
+     return;
+   }
+   // Preserve original long comments and their native expansion controls.
+   // A collapsed YouTube comment may contain only the truncated cipher.
+   // Do not hide it or replace it with an orange broken result.
+   if(!enabled||!dict){
+     if(!preserveOriginal){
+       const span=document.createElement('span');
+       span.className='re-cipher-output';
+       for(const part of parts){
+         if(part.kind==='plain')span.append(document.createTextNode(part.text));
+         else{
+           const prefix=document.createElement('span');
+           prefix.className='re-cipher-prefix';prefix.textContent=part.prefix;
+           const text=document.createElement('span');
+           text.className='re-cipher-encoded';text.textContent=part.payload;
+           span.append(prefix,text);
+         }
+       }
+       el.classList.add('re-cipher-original-hidden');
+       el.insertAdjacentElement('afterend',span);
+       rendered.set(el,{text:t,requestedMode,container,preserveOriginal,output:span});
+     }else{
+       rendered.set(el,{text:t,requestedMode,container,preserveOriginal,failed:true});
+     }
+     return;
+   }
+   const span=document.createElement(preserveOriginal?'div':'span');
+   span.className='re-cipher-output'+(preserveOriginal?' re-cipher-expanded-output':'');
+   span.setAttribute('data-re-cipher-generated','yes');
+   if(preserveOriginal){
+     const header=document.createElement('span');
+     header.className='re-cipher-result-label';header.textContent='復号結果';
+     span.append(header);
+   }
+   try{
+     for(const part of parts){
+       if(part.kind==='plain'){
+         // Original long comments still show their plain text; don't duplicate it.
+         if(!preserveOriginal)span.append(document.createTextNode(part.text));
+         continue;
+       }
+       if(!part.payload)throw Error('暗号文が空です');
+       const prefix=document.createElement('span');
+       prefix.className='re-cipher-prefix';prefix.textContent=part.prefix;
+       const text=document.createElement('span');
+       text.className='re-cipher-decoded';text.textContent=decode(part.prefix+part.payload);
+       span.append(prefix,text);
+     }
+   }catch{
+     rendered.set(el,{text:t,requestedMode,container,preserveOriginal,failed:true});
+     if(Date.now()-lastIssueTime>60_000){
+       lastIssueTime=Date.now();
+       chrome.runtime.sendMessage({type:'DECODE_FAILURE'}).catch(()=>{});
+     }
+     return;
+   }
+   if(preserveOriginal){
+     // Insert outside the expander so YouTube's show-more/less never hides it.
+     const anchor=el.closest('ytd-expander')||el;
+     anchor.insertAdjacentElement('afterend',span);
+   }else{
+     el.classList.add('re-cipher-original-hidden');
+     el.insertAdjacentElement('afterend',span);
+   }
+   el.dataset.reCipher='yes';
+   rendered.set(el,{text:t,requestedMode,container,preserveOriginal,output:span});
  }
  function scan(){
   scheduled=false;
   for(const [el,prev] of rendered){
    if(!el.isConnected){
     if(prev.container)prev.container.classList.remove('re-cipher-item-hidden');
+    prev.output?.remove();
     rendered.delete(el);
    }
   }
