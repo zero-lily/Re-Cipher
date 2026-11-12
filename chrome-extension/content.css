@@ -4,19 +4,3 @@
 .re-cipher-prefix{display:inline;color:#7653ab!important;font-weight:800!important;background:rgba(166,124,227,.13);border-radius:3px;padding:0 2px;margin-right:4px}
 .re-cipher-decoded{display:inline;color:#238f7d!important;font-weight:700!important;background:rgba(75,200,166,.12);border-bottom:1px solid rgba(35,143,125,.45);padding:0 2px;border-radius:2px}
 .re-cipher-encoded{display:inline;color:#bd7a30!important;font-weight:600!important;background:rgba(203,145,67,.12);border-radius:2px;padding:0 2px}
-
-/* Long or expandable comments: keep YouTube's original text and "詳細" control.
-   Place the decoded result outside the expander instead of hiding its nodes. */
-.re-cipher-expanded-output{
-  display:block!important;
-  margin:8px 0;
-  padding:8px 10px;
-  border-left:3px solid #238f7d;
-  background:rgba(75,200,166,.07);
-  border-radius:3px;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-  color:var(--yt-spec-text-primary,inherit);
-  font:inherit;
-}
-.re-cipher-result-label{display:block;font-size:11px;font-weight:800;color:#238f7d!important;margin-bottom:4px}
