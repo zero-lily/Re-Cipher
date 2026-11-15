@@ -75,9 +75,9 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
  .player-wrap .toggles{justify-content:space-between;gap:7px 10px;flex-wrap:wrap;padding:8px 0 0;border-bottom:0}
  .player-wrap .toggles label{gap:4px;font-size:11px}
  .player-wrap .toggles input{width:16px;height:16px}
- .chat-panel{width:100%;min-height:390px;max-height:none;overflow:hidden;padding-top:4px}
+ .chat-panel{width:100%;height:100vh;height:100dvh;min-height:390px;max-height:none;overflow:hidden;padding-top:4px}
  /* The scrollable message list remains below the video-and-controls stack. */
- .chat-list{height:min(54vh,550px);min-height:280px;max-height:none;flex:0 0 auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+ .chat-list{height:auto;min-height:0;max-height:none;flex:1 1 auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
  .msg{grid-template-columns:41px minmax(0,1fr);gap:8px;padding:10px 0}
  .msg .body{font-size:15px;line-height:1.65}
  h1{font-size:20px}
