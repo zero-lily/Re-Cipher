@@ -78,6 +78,7 @@
   state.title=data.title||state.title;
   state.lastEnd=-1;state.lastKey='';
   $('video-title').textContent=state.title||'YouTube動画';
+  $('video-title').title=state.title||'YouTube動画';
   $('chat-count').textContent=state.messages.length.toLocaleString('ja-JP')+'件';
   st(origin+'：'+state.messages.length.toLocaleString('ja-JP')+'件のチャットを読み込みました');
   render(true);
@@ -206,7 +207,7 @@
   playbackToggle.addEventListener('click',()=>{
    const expanded=playbackToggle.getAttribute('aria-expanded')!=='true';
    playbackToggle.setAttribute('aria-expanded',String(expanded));
-   playbackToggle.textContent=expanded?'閉じる':'再生操作';
+   playbackToggle.textContent=expanded?'再生操作 ▲':'再生操作 ▼';
    playerExtras.classList.toggle('is-open',expanded);
   });
  }
