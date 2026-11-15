@@ -199,6 +199,18 @@
  $('forward30').addEventListener('click',()=>{if(state.playerReady)state.player.seekTo(getTime()+30,true);render(true);});
  $('seek').addEventListener('input',()=>{state.seekDragging=true;$('position').textContent=fmt($('seek').value);});
  $('seek').addEventListener('change',()=>{state.seekDragging=false;if(state.playerReady)state.player.seekTo(Number($('seek').value),true);render(true);});
+ // Place the mobile comment toolbar immediately below the sticky video.
+ // Track actual player height so long titles and device rotation do not overlap it.
+ const playerWrap=document.querySelector('.player-wrap');
+ function updateStickyOffset(){
+  const height=playerWrap?Math.ceil(playerWrap.getBoundingClientRect().height):0;
+  document.documentElement.style.setProperty('--player-sticky-offset',height+'px');
+ }
+ if(playerWrap&&typeof ResizeObserver!=='undefined'){
+  new ResizeObserver(updateStickyOffset).observe(playerWrap);
+ }
+ window.addEventListener('resize',updateStickyOffset);
+ updateStickyOffset();
  window.setInterval(updateClock,650);
  loadCodec();
  initIndex();
