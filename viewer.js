@@ -199,6 +199,24 @@
  $('forward30').addEventListener('click',()=>{if(state.playerReady)state.player.seekTo(getTime()+30,true);render(true);});
  $('seek').addEventListener('input',()=>{state.seekDragging=true;$('position').textContent=fmt($('seek').value);});
  $('seek').addEventListener('change',()=>{state.seekDragging=false;if(state.playerReady)state.player.seekTo(Number($('seek').value),true);render(true);});
+ // On mobile, keep the existing chat controls directly below the sticky player.
+ // They move together and cannot overlap one another or scroll off separately.
+ const chatControls=document.querySelector('.chat-controls');
+ const chatPanel=document.querySelector('.chat-panel');
+ const chatList=$('chat-list');
+ const playerWrap=document.querySelector('.player-wrap');
+ const mobileLayout=window.matchMedia('(max-width:800px)');
+ function placeChatControls(){
+  if(!chatControls||!chatPanel||!playerWrap||!chatList)return;
+  if(mobileLayout.matches){
+   if(chatControls.parentElement!==playerWrap)playerWrap.appendChild(chatControls);
+  }else if(chatControls.parentElement!==chatPanel){
+   chatPanel.insertBefore(chatControls,chatList);
+  }
+ }
+ if(typeof mobileLayout.addEventListener==='function')mobileLayout.addEventListener('change',placeChatControls);
+ else mobileLayout.addListener(placeChatControls);
+ placeChatControls();
  window.setInterval(updateClock,650);
  loadCodec();
  initIndex();
