@@ -67,16 +67,16 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
  .player-wrap{width:100%;position:sticky;top:0;z-index:5;background:#f6f5fa;padding-bottom:1px}
  .player-shell{border-radius:10px;min-height:200px}
  .player-wrap .panel{padding:10px}
- .chat-panel{width:100%;min-height:390px;max-height:none;overflow:visible}
- /* Keep controls at the top of the comment panel, beneath the sticky video. */
- .chat-controls{position:sticky;top:calc(var(--player-sticky-offset, 0px) + 4px);z-index:6;padding:10px 0 9px;background:#fff;border-bottom:1px solid #eeeaf4}
+ .chat-panel{width:100%;min-height:390px;max-height:none;overflow:hidden}
+ /* Controls stay in the comment panel; only the message list itself scrolls. */
+ .chat-controls{position:static;padding:10px 0 9px;background:#fff;border-bottom:1px solid #eeeaf4}
  .chat-head{gap:6px}
  .chat-head h2{font-size:13px}
  .chat-head .meta{font-size:11px}
  .toggles{justify-content:space-between;gap:7px 10px;flex-wrap:wrap;padding:8px 0 0;border-bottom:0}
  .toggles label{gap:4px;font-size:11px}
  .toggles input{width:16px;height:16px}
- .chat-list{height:min(54vh,550px);min-height:280px;max-height:none;flex:auto}
+ .chat-list{height:min(54vh,550px);min-height:280px;max-height:none;flex:0 0 auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
  .msg{grid-template-columns:41px minmax(0,1fr);gap:8px;padding:10px 0}
  .msg .body{font-size:15px;line-height:1.65}
  h1{font-size:20px}
