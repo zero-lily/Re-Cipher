@@ -199,6 +199,17 @@
  $('forward30').addEventListener('click',()=>{if(state.playerReady)state.player.seekTo(getTime()+30,true);render(true);});
  $('seek').addEventListener('input',()=>{state.seekDragging=true;$('position').textContent=fmt($('seek').value);});
  $('seek').addEventListener('change',()=>{state.seekDragging=false;if(state.playerReady)state.player.seekTo(Number($('seek').value),true);render(true);});
+ // Keep video full size on mobile while collapsing secondary playback controls.
+ const playbackToggle=$('playback-toggle');
+ const playerExtras=$('player-extras');
+ if(playbackToggle&&playerExtras){
+  playbackToggle.addEventListener('click',()=>{
+   const expanded=playbackToggle.getAttribute('aria-expanded')!=='true';
+   playbackToggle.setAttribute('aria-expanded',String(expanded));
+   playbackToggle.textContent=expanded?'閉じる':'再生操作';
+   playerExtras.classList.toggle('is-open',expanded);
+  });
+ }
  // On mobile, keep the existing chat controls directly below the sticky player.
  // They move together and cannot overlap one another or scroll off separately.
  const chatControls=document.querySelector('.chat-controls');
