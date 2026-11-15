@@ -39,6 +39,8 @@ input:focus,button:focus-visible,select:focus{outline:2px solid #a898db;outline-
 .chat-panel{overflow:hidden;display:flex;flex-direction:column;min-height:420px;max-height:calc(100vh - 140px)}
 .chat-controls{flex:0 0 auto;min-width:0}
 .chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chat-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px}
+.playback-toggle{display:none}
 .toggles{display:flex;gap:9px;flex-wrap:wrap;padding:11px 0;border-bottom:1px solid #eeeaf4}
 .toggles label{font-size:12px;font-weight:650;white-space:nowrap;display:flex;align-items:center;gap:5px}
 .toggles input{accent-color:#795ac2;width:16px;height:16px}
@@ -65,14 +67,20 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
  .wrap{padding:12px}
  .top{padding:12px}
  .player-wrap{width:100%;position:sticky;top:0;z-index:5;background:#f6f5fa;padding-bottom:1px}
- .player-shell{border-radius:10px;min-height:200px}
- .player-wrap .panel{padding:10px;margin-bottom:0}
+ .player-shell{border-radius:10px;min-height:0}
+ .player-wrap .panel{padding:5px;margin-bottom:0}
+ /* Keep the video full width; tuck title/seek/skip behind a compact button. */
+ .player-wrap .player-extras{display:none;padding:2px 5px 5px}
+ .player-wrap .player-extras.is-open{display:block}
  /* Keep the controls in the same sticky stack as the video so they can never drift over it. */
- .player-wrap > .chat-controls{position:static;top:auto;padding:10px 12px 9px;margin:0;background:#fff;border:1px solid #e4deec;border-top:0;border-radius:0 0 12px 12px}
+ .player-wrap > .chat-controls{position:static;top:auto;padding:8px 11px;margin:0;background:#fff;border:1px solid #e4deec;border-top:0;border-radius:0 0 12px 12px}
  .player-wrap .chat-head{gap:6px}
  .player-wrap .chat-head h2{font-size:13px}
  .player-wrap .chat-head .meta{font-size:11px}
- .player-wrap .toggles{justify-content:space-between;gap:7px 10px;flex-wrap:wrap;padding:8px 0 0;border-bottom:0}
+ .player-wrap .chat-head-actions{gap:8px}
+ .player-wrap .playback-toggle{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;min-height:28px;white-space:nowrap;background:#f5f0ff;border:1px solid #d4c8ec;border-radius:7px;color:#624ca0;font-size:11px;font-weight:700}
+ .player-wrap .playback-toggle[aria-expanded="true"]{background:#eae1fa}
+ .player-wrap .toggles{justify-content:space-between;gap:7px 10px;flex-wrap:wrap;padding:6px 0 0;border-bottom:0}
  .player-wrap .toggles label{gap:4px;font-size:11px}
  .player-wrap .toggles input{width:16px;height:16px}
  .chat-panel{width:100%;height:100vh;height:100dvh;min-height:390px;max-height:none;overflow:hidden;padding-top:4px}
@@ -87,6 +95,8 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
 }
 @media(max-width:360px){
  .player-wrap > .chat-controls{padding:8px 10px}
+ .player-wrap .chat-head-actions{gap:5px}
+ .player-wrap .playback-toggle{padding:4px 6px;font-size:10.5px}
  .player-wrap .toggles{column-gap:5px}
  .player-wrap .toggles label{gap:3px;font-size:10.5px}
  .player-wrap .toggles input{width:15px;height:15px}
@@ -114,12 +124,14 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
  <div class="player-wrap">
   <div class="panel">
    <div class="player-shell"><div id="yt-player"></div></div>
-   <div class="video-name" id="video-title">アーカイブを選択してください</div>
+   <div class="player-extras" id="player-extras">
+    <div class="video-name" id="video-title">アーカイブを選択してください</div>
    <div class="seek-row"><span id="position">00:00</span><span id="duration">再生時刻に自動追従</span></div>
    <input type="range" id="seek" min="0" max="100" value="0" step="1" aria-label="再生位置を移動" disabled>
    <div class="hrow" style="margin-top:8px;justify-content:space-between">
     <div class="hrow"><button class="btn ghost small" id="back30" type="button">−30秒</button><button class="btn ghost small" id="forward30" type="button">＋30秒</button></div>
     <a id="youtube-link" href="https://www.youtube.com/channel/UCrXdSoIyfBmeKPsu0CggugQ/live" target="_blank" rel="noopener noreferrer" class="help live-link">YouTubeで開く</a>
+   </div>
    </div>
   </div>
  </div>
@@ -127,7 +139,10 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
   <div class="chat-controls" role="group" aria-label="チャット表示設定">
    <div class="chat-head">
     <h2>チャットリプレイ</h2>
-    <span id="chat-count" class="meta">データを読み込み中</span>
+    <div class="chat-head-actions">
+     <span id="chat-count" class="meta">データを読み込み中</span>
+     <button id="playback-toggle" class="playback-toggle" type="button" aria-controls="player-extras" aria-expanded="false">再生操作</button>
+    </div>
    </div>
    <div class="toggles">
     <label><input type="checkbox" id="decode-toggle" checked>自動復号</label>
@@ -139,11 +154,6 @@ footer{color:#857c92;font-size:11px;padding:20px 0 35px}
   <div class="meta" id="chat-footer">接頭辞「ネタバレ防止言語:」と旧「Re信号:」に対応します。</div>
  </section>
 </div>
-<section class="panel">
- <h2>ライブ配信について</h2>
- <p class="help">このページのアーカイブ再生にはYouTube APIキーは不要です。配信中のチャットをサイトに直接同期するには別の取得サーバーが必要です。現在は配信の公式視聴ページを開けます。</p>
- <a href="https://www.youtube.com/channel/UCrXdSoIyfBmeKPsu0CggugQ/live" target="_blank" rel="noopener noreferrer" class="btn ghost live-link">新宝島トーアのライブ配信を開く</a>
-</section>
 <footer>非公式ファンツール。YouTube動画は公式埋め込みプレーヤーを使用します。チャットは取り込んだ公開データから表示します。取得できない／埋め込みが許可されていない動画もあります。</footer>
 </main>
 <script src="viewer.js?v=20261115-mobile-chat-controls" defer></script>
