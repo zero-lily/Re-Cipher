@@ -26,3 +26,8 @@
 .confirm-plain input{flex:0 0 auto;width:17px;height:17px;margin:1px 0;accent-color:#7759c5}
 .extension-footer{margin:14px 0 4px;padding-top:11px;border-top:1px solid #e4dcf0;text-align:center;font-size:12px;font-weight:700}
 .extension-footer a{display:inline-block;padding:6px 8px}
+
+/* Encoding is live: keep only the clear action beside a quiet explanation. */
+.encode-toolbar{justify-content:space-between;gap:10px;min-height:29px}
+.auto-convert-note{font-size:10.5px;color:#777286;line-height:1.5}
+.encode-toolbar .textbutton{margin-left:auto}
