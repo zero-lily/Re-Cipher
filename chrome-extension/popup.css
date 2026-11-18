@@ -14,3 +14,15 @@
 .mix-options label{display:block;margin:11px 0 4px;font-size:11px;color:#695c81;font-weight:700}
 .mix-options textarea{min-height:57px}
 .mix-options .small-note{margin-top:5px}
+
+/* Keep saved ordinary prose unmistakable, even with its editor collapsed. */
+.mix-options summary{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.mix-indicator{display:inline-block;flex:none;padding:2px 6px;border-radius:6px;background:#fff0d7;color:#854900;border:1px solid #e8bf80;font-size:10.5px;font-weight:800}
+.mix-warning{margin:8px 0 0;padding:8px 10px;background:#fff5e7;border:1px solid #f0c98a;border-radius:8px;font-size:11px;line-height:1.6;color:#834b12;font-weight:700}
+.mix-actions{justify-content:flex-end}
+.mix-actions button{flex:0 0 auto!important;font-size:11px;min-height:30px}
+.confirm-plain{margin-top:10px;padding:10px;background:#fff;border:1px solid #c9b4e7;border-radius:9px}
+.confirm-plain label{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;color:#5a3e88;font-weight:700;cursor:pointer}
+.confirm-plain input{flex:0 0 auto;width:17px;height:17px;margin:1px 0;accent-color:#7759c5}
+.extension-footer{margin:14px 0 4px;padding-top:11px;border-top:1px solid #e4dcf0;text-align:center;font-size:12px;font-weight:700}
+.extension-footer a{display:inline-block;padding:6px 8px}
