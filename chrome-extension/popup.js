@@ -3,10 +3,12 @@
  const PREFIX='ネタバレ防止言語:', LEGACY_PREFIX='Re信号:';
  const prefixOf=text=>text.startsWith(PREFIX)?PREFIX:text.startsWith(LEGACY_PREFIX)?LEGACY_PREFIX:null;
  const $=id=>document.getElementById(id);
- const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),before:$('plain-before'),after:$('plain-after'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded')};
+ const ui={enabled:$('enabled'),plain:$('plain'),cipher:$('cipher'),status:$('status'),update:$('update'),notice:$('notice'),send:$('send'),copy:$('copy'),count:$('char-count'),cipherCount:$('cipher-count'),confirm:$('confirm-panel'),dest:$('dest'),preview:$('preview'),commit:$('commit'),issue:$('decode-issue'),hide:$('hide-signals'),before:$('plain-before'),after:$('plain-after'),decodeInput:$('decode-input'),decodedResult:$('decoded-result'),decodedCount:$('decoded-count'),decodeHint:$('decode-hint'),copyDecoded:$('copy-decoded'),mixIndicator:$('mix-active'),mixWarning:$('mix-warning'),confirmPlain:$('confirm-plain'),confirmPlainRow:$('confirm-plain-row')};
  let dict=null,trie=null,encrypted='',currentPlain='',pending=null,decodedText='';
  const DRAFT_KEY='reCipherDraftV117';
  const symbolLen=s=>Array.from(s).length;
+ const mixedLengths=()=>({before:symbolLen(ui.before.value.trim()),after:symbolLen(ui.after.value.trim())});
+ const hasMixedPlain=()=>{const x=mixedLengths();return x.before>0||x.after>0;};
  const note=(s,error=false)=>{ui.notice.textContent=s;ui.notice.className='notice '+(error?'error':'success');};
  // All send status and final confirmation are located immediately below the title.
  // This is the scroll container in Chrome's fixed-height popup.
@@ -133,6 +135,13 @@
      ui.confirm.classList.add('hidden');
    }
    currentPlain=signature;
+   const mixed=mixedLengths();
+   const hasMixed=mixed.before>0||mixed.after>0;
+   ui.mixIndicator.classList.toggle('hidden',!hasMixed);
+   ui.mixIndicator.textContent=hasMixed?'平文あり '+(mixed.before+mixed.after)+'文字':'';
+   ui.mixWarning.classList.toggle('hidden',!hasMixed);
+   ui.mixWarning.textContent=hasMixed?'⚠ 平文が併記されます（暗号前 '+mixed.before+'文字・暗号後 '+mixed.after+'文字）。送信前に内容を確認してください。':'';
+   ui.mixWarning.setAttribute('aria-hidden',String(!hasMixed));
    try{
      const encoded=plain?encode(plain):'';
      const before=ui.before.value.trim(),after=ui.after.value.trim();
@@ -165,6 +174,10 @@
  });
  ui.decodeInput.addEventListener('input',()=>{renderDecode();saveDraft();});
  $('clear-decode').addEventListener('click',()=>{ui.decodeInput.value='';renderDecode();saveDraft();ui.decodeInput.focus();});
+ $('clear-mixed').addEventListener('click',()=>{
+   ui.before.value='';ui.after.value='';
+   render();saveDraft();note('前後の平文だけをクリアしました');
+ });
  $('insert-prefix').addEventListener('click',()=>{
    let parts=globalThis.ReCipherMixed.split(ui.decodeInput.value);
    let signal=parts.find(part=>part.kind==='signal');
@@ -245,7 +258,10 @@
    try{
      const targets=await inspectTargets();
      if(!targets.length)throw Error('送信できる入力欄が見つかりません。動画の「コメントする…」を一度クリックするか、チャット欄を開いて再試行してください。コピーは利用できます');
-     pending={text:encrypted,targets};ui.dest.replaceChildren();
+     pending={text:encrypted,targets,mixed:hasMixedPlain()};
+     ui.confirmPlain.checked=false;
+     ui.confirmPlainRow.classList.toggle('hidden',!pending.mixed);
+     ui.dest.replaceChildren();
      if(targets.length>1){const o=new Option('送信先を選択してください','');ui.dest.append(o);}
      for(let i=0;i<targets.length;i++){const t=targets[i];const hint=t.title.slice(0,28);ui.dest.add(new Option(`${LABEL[t.kind]}${hint?' / '+hint:''}`,String(i)));}
      ui.dest.value=targets.length===1?'0':'';
@@ -256,10 +272,14 @@
  function updateConfirmation(){
    if(!pending){ui.commit.disabled=true;return;}
    const selected=ui.dest.value;const t=selected===''?null:pending.targets[Number(selected)];
-   ui.commit.disabled=!t||pending.text!==encrypted||t.kind==='live'&&symbolLen(encrypted)>200;
-   $('confirm-warn').textContent=t?.kind==='live'&&symbolLen(encrypted)>200?'ライブチャットは200文字以内です。文章を短くしてください。':'投稿は即時公開される場合があります。内容・送信先を確認してください。';
+   ui.commit.disabled=!t||pending.text!==encrypted||(t.kind==='live'&&symbolLen(encrypted)>200)||(pending.mixed&&!ui.confirmPlain.checked);
+   $('confirm-warn').textContent=t?.kind==='live'&&symbolLen(encrypted)>200
+     ?'ライブチャットは200文字以内です。文章を短くしてください。'
+     :pending.mixed?'⚠ 平文が含まれています。本文・送信先・平文確認チェックを確認してください。'
+     :'投稿は即時公開される場合があります。内容・送信先を確認してください。';
  }
  ui.dest.addEventListener('change',updateConfirmation);
+ ui.confirmPlain.addEventListener('change',updateConfirmation);
  $('cancel').addEventListener('click',()=>{ui.confirm.classList.add('hidden');pending=null;note('送信を取り消しました');});
  ui.commit.addEventListener('click',async()=>{
    if(!pending||ui.commit.disabled)return;
