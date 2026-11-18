@@ -285,7 +285,15 @@
  }
  async function sendEncrypted(msg){
    const {kind,encoded,expectedHref}=msg;
-   if(!['live','comment','reply'].includes(kind)||typeof encoded!=='string'||!encoded.startsWith(PREFIX)||encoded.length>10000)return {ok:false,error:'送信内容が不正です'};
+   // The cipher may be preceded or followed by ordinary prose. Validate
+   // actual signal segments instead of requiring the prefix at position zero.
+   // Keep rejecting messages with no cipher or an empty cipher segment.
+   const segments=typeof encoded==='string'&&globalThis.ReCipherMixed?.split(encoded);
+   const validSignals=Array.isArray(segments)
+     &&segments.some(part=>part.kind==='signal'&&part.payload.length>0)
+     &&segments.every(part=>part.kind!=='signal'||part.payload.length>0);
+   if(!['live','comment','reply'].includes(kind)||typeof encoded!=='string'||encoded.length>10000||!validSignals)
+     return {ok:false,error:'送信内容が不正です（暗号文の接頭辞と本文を確認してください）'};
    if(kind==='live' && Array.from(encoded).length>200)return {ok:false,error:'ライブチャットの200文字上限を超えています'};
    if(location.href!==expectedHref)return {ok:false,error:'送信先のページが変わりました。送信操作を中断しました'};
    let fields=candidates(kind);
