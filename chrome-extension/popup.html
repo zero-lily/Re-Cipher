@@ -10,7 +10,7 @@
 <main class="wrap">
   <header class="head">
     <div><h1>Re信号 <span>暗号化・復号</span></h1><p>YouTubeコメント・ライブチャット用</p></div>
-    <span class="version">v1.1.10</span>
+    <span class="version">v1.1.11</span>
   </header>
   <section id="confirm-panel" class="confirm hidden" aria-label="送信の最終確認">
     <h2>送信前の確認</h2>
@@ -41,7 +41,7 @@
       <div class="row mix-actions"><button id="clear-mixed" class="subtle" type="button">前後の平文だけをクリア</button></div>
     </details>
     <p id="mix-warning" class="mix-warning hidden" role="status" aria-live="polite"></p>
-    <div class="row"><button id="encrypt" class="subtle" type="button">暗号化</button><button id="clear" class="textbutton" type="button">クリア</button></div>
+    <div class="row encode-toolbar"><span class="auto-convert-note">入力すると自動で変換されます</span><button id="clear" class="textbutton" type="button">クリア</button></div>
     <div class="output-label"><strong>変換結果</strong><span id="cipher-count">0文字</span></div>
     <div class="result" id="cipher" role="status">暗号化するとここに表示されます</div>
     <div class="row buttons"><button id="copy" type="button" class="subtle" disabled>暗号文をコピー</button><button id="send" type="button" class="primary" disabled>暗号化して送信…</button></div>
