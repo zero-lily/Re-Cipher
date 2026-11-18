@@ -197,7 +197,6 @@
    catch{note('復号文をコピーできませんでした',true);}
  });
  for(const field of [ui.plain,ui.before,ui.after])field.addEventListener('input',()=>{render();saveDraft();});
- $('encrypt').addEventListener('click',()=>{render();note(encrypted?'変換しました。内容を確認してください':'入力欄に文章を入力してください',!encrypted);});
  $('clear').addEventListener('click',()=>{ui.plain.value='';ui.before.value='';ui.after.value='';render();saveDraft();note('');});
  ui.copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(encrypted);note('暗号文をコピーしました');}catch{note('コピーできませんでした。結果欄から手動コピーしてください',true);}});
  // Discover only YouTube frames, not unrelated advertising iframes.
