@@ -10,7 +10,7 @@
 <main class="wrap">
   <header class="head">
     <div><h1>Re信号 <span>暗号化・復号</span></h1><p>YouTubeコメント・ライブチャット用</p></div>
-    <span class="version">v1.1.9</span>
+    <span class="version">v1.1.10</span>
   </header>
   <section id="confirm-panel" class="confirm hidden" aria-label="送信の最終確認">
     <h2>送信前の確認</h2>
@@ -18,6 +18,9 @@
     <select id="dest"></select>
     <div class="preview" id="preview"></div>
     <p id="confirm-warn" class="small-note">内容と送信先が正しい場合のみ確定してください。</p>
+    <div id="confirm-plain-row" class="confirm-plain hidden">
+      <label for="confirm-plain"><input type="checkbox" id="confirm-plain"> 平文も含めて送信することを確認しました</label>
+    </div>
     <div class="row"><button id="cancel" type="button" class="subtle">戻る</button><button id="commit" type="button" class="danger" disabled>この内容を送信する</button></div>
   </section>
   <div class="notice" id="notice" role="status" aria-live="polite"></div>
@@ -29,13 +32,15 @@
     <div class="sectionhead"><h2>暗号化</h2><span id="char-count">0文字</span></div>
     <textarea id="plain" rows="4" spellcheck="false" placeholder="暗号化したい文章を入力してください"></textarea>
     <details id="mix-options" class="mix-options">
-      <summary>通常の文章も併記する（任意）</summary>
+      <summary>通常の文章も併記する（任意）<span id="mix-active" class="mix-indicator hidden" aria-live="polite"></span></summary>
       <label for="plain-before">暗号文より前の平文</label>
       <textarea id="plain-before" rows="2" spellcheck="false" placeholder="最初にそのまま表示する文章"></textarea>
       <label for="plain-after">暗号文より後の平文</label>
       <textarea id="plain-after" rows="2" spellcheck="false" placeholder="最後にそのまま表示する文章"></textarea>
       <p class="small-note">後ろの平文には「【平文】」を自動で付けます。入力内容はこのChromeに下書き保存されます。</p>
+      <div class="row mix-actions"><button id="clear-mixed" class="subtle" type="button">前後の平文だけをクリア</button></div>
     </details>
+    <p id="mix-warning" class="mix-warning hidden" role="status" aria-live="polite"></p>
     <div class="row"><button id="encrypt" class="subtle" type="button">暗号化</button><button id="clear" class="textbutton" type="button">クリア</button></div>
     <div class="output-label"><strong>変換結果</strong><span id="cipher-count">0文字</span></div>
     <div class="result" id="cipher" role="status">暗号化するとここに表示されます</div>
@@ -58,6 +63,7 @@
     <p class="small-note">Chrome起動時に辞書を確認。更新に失敗しても同梱辞書で動作します。</p>
     <p class="small-note"><a href="https://zero-lily.github.io/Re-Cipher/" target="_blank" rel="noopener noreferrer">暗号化サイトを開く</a></p>
   </details>
+  <footer class="extension-footer"><a href="https://reis-shop.booth.pm/items/9078710" target="_blank" rel="noopener noreferrer">BOOTHで配布・更新情報を見る</a></footer>
 </main>
 <script src="mixed.js"></script>
 <script src="popup.js"></script>
